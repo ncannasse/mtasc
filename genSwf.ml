@@ -986,6 +986,10 @@ let generate_super_bindings ctx =
 
 let generate_class_code ctx clctx =
 	let cpath , cname = Class.path clctx in
+	getvar ctx (generate_access ctx (EStatic (cpath,cname),null_pos));
+	write ctx ANot;
+	write ctx ANot;
+	let jump_end_def = cjmp ctx in
 	generate_package_register ctx cpath;
 	let k = generate_package ctx cpath in
 	push ctx [VStr cname];
@@ -1079,7 +1083,8 @@ let generate_class_code ctx clctx =
 		generate_val ctx v;
 		setvar ctx VarObj;
 	) (Class.initvars clctx);
-	generate_super_bindings ctx
+	generate_super_bindings ctx;
+	jump_end_def()
 
 let to_utf8 str =
 	try
@@ -1184,7 +1189,9 @@ let generate file ~compress exprs =
 			IO.close_in ch;
 			header , data
 		| Some h ->
-		h , [tag (TSetBgColor { cr = 0xFF; cg = 0xFF; cb = 0xFF }); tag TShowFrame])
+			let data = [tag (TSetBgColor { cr = 0xFF; cg = 0xFF; cb = 0xFF }) ] in
+			let data = data @ (Array.to_list (Array.init !frame (fun _ -> tag TShowFrame))) in
+			h , data)
 	in
 	let ch = IO.output_channel (open_out_bin file) in
 	let found = ref false in
