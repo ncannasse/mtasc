@@ -41,7 +41,7 @@ CFG=mtasc - Win32 Debug
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir ""
 # PROP Intermediate_Dir ""
-# PROP Cmd_Line "ocamake -opt -pp camlp4o mtasc.dsp extLib.cmxa zip.cmxa win32.cmxa"
+# PROP Cmd_Line "ocamake -opt -pp camlp4o mtasc.dsp extLib.cmxa extc.cmxa"
 # PROP Rebuild_Opt "/a"
 # PROP Target_File "mtasc.exe"
 # PROP Bsc_Name ""
@@ -62,7 +62,7 @@ CFG=mtasc - Win32 Debug
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir ""
 # PROP Intermediate_Dir ""
-# PROP Cmd_Line "ocamake -pp camlp4o mtasc.dsp win32.cma"
+# PROP Cmd_Line "ocamake -lp -custom -pp camlp4o mtasc.dsp extLib.cma extc.cma"
 # PROP Rebuild_Opt "/a"
 # PROP Target_File "mtasc.exe"
 # PROP Bsc_Name ""
@@ -86,19 +86,19 @@ CFG=mtasc - Win32 Debug
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\ocaml\swflib\actionScript.ml
+SOURCE=..\swflib\actionScript.ml
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\ocaml\swflib\swf.ml
+SOURCE=..\swflib\swf.ml
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\ocaml\swflib\swfParser.ml
+SOURCE=..\swflib\swfParser.ml
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\ocaml\swflib\swfZip.ml
+SOURCE=..\swflib\swfZip.ml
 # End Source File
 # End Group
 # Begin Source File
@@ -124,10 +124,6 @@ SOURCE=.\lexer.mll
 # Begin Source File
 
 SOURCE=.\main.ml
-# End Source File
-# Begin Source File
-
-SOURCE=.\oSDep.ml
 # End Source File
 # Begin Source File
 
