@@ -412,6 +412,12 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		(match type_constant ctx c e p with
 		| Package pk when not in_field -> resolve_package ctx e pk p
 		| t -> t)
+	| ECast (v1,v2) ->
+		let t = type_val ctx v1 in
+		ignore(type_val ctx v2);
+		(match t with
+		| Static c -> Class c
+		| _ -> error (Custom "Casting to not a class") (pos v1))
 	| EArray (v1,v2) -> 
 		let t = type_val ctx v1 in
 		let t2 = type_val ctx v2 in
@@ -465,6 +471,10 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		| Dyn ->
 			List.iter (fun v -> no_void (type_val ctx v) (pos v)) args;
 			Dyn
+		| Static c when List.length args = 1 ->
+			ignore(type_val ctx (List.hd args));
+			set_eval e (ECast (v,List.hd args));
+			Class c
 		| _ -> 
 			error (Custom ("Cannot call non-function object " ^ s_type_decl t)) (pos v));
 	| EQuestion (v,v1,v2) ->

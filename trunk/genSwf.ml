@@ -81,7 +81,7 @@ let stack_delta = function
 	| ALocalAssign -> -2
 	| AReturn -> -1
 	| AGetURL2 _ -> -1
-	| ADeleteObj | AInstanceOf -> -1
+	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
 	| AEnum2 -> -1
 	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf -> 0
@@ -257,6 +257,7 @@ let rec used_in_block curblock vname e =
 			(match c with
 			| Ident v -> !in_lambda && v = vname
 			| _ -> false)
+		| ECast (v1,v2) 
 		| EArray (v1,v2) ->
 			vloop v1 || vloop v2
 		| EBinop (_,v1,v2) ->
@@ -393,21 +394,6 @@ let generate_ident ctx s p =
 	| "_global" | "_root" ->
 		push ctx [VStr s];
 		VarStr
-	| "__CLASS__" ->
-		let p , name = Class.path ctx.current in
-		let id = (match p with [] -> "" | _ -> String.concat "." p ^ ".") ^ name in
-		push ctx [VStr id];
-		VarReg (-1)
-	| "__METHOD__" ->
-		push ctx [VStr ctx.curmethod];
-		VarReg (-1)
-	| "__FILE__" ->
-		push ctx [VStr p.pfile];
-		VarReg (-1)
-	| "__LINE__" ->
-		let line = Lexer.get_error_line p in
-		push ctx [VInt line];
-		VarReg (-1)
 	| "super" -> 
 		assert false
 	| _ ->
@@ -457,20 +443,10 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 		push ctx [VStr s];
 		VarObj
 	| EStatic path ->
-		(match Class.resolve ctx.current path with
-		| [] , "Xml" ->
-			push ctx [VStr "XML"];
-			VarStr
-		| [] , "XmlNode" ->
-			push ctx [VStr "XMLNode"];
-			VarStr
-		| [] , "XmlSocket" ->
-			push ctx [VStr "XMLSocket"];
-			VarStr
-		| p , s ->
-			let k = generate_package ~fast:true ctx p in
-			push ctx [VStr s];
-			k)
+		let p , s = Class.resolve ctx.current path in
+		let k = generate_package ~fast:true ctx p in
+		push ctx [VStr s];
+		k
 	| EArray (va,vb) ->
 		generate_val ctx va;
 		generate_val ctx vb;
@@ -582,6 +558,9 @@ and generate_call ?(newcall=false) ctx v vl =
 		(match generate_access ~forcall:true ctx v with
 		| VarObj -> write ctx ADeleteObj
 		| _ -> write ctx ADelete)
+	| EConst (Ident "eval") , [v] ->
+		generate_val ctx v;
+		write ctx AEval
 	| EConst (Ident "getTimer"), [] ->
 		write ctx AGetTimer
 	| EConst (Ident ("getURL" as x)) , params
@@ -621,6 +600,10 @@ and generate_val ?(retval=true) ctx (v,p) =
 		generate_constant ctx p c
 	| EParenthesis v ->
 		generate_val ctx v
+	| ECast (v1,v2) ->
+		generate_val ctx v1;
+		generate_val ctx v2;
+		write ctx ACast
 	| EQuestion (v,v1,v2) ->
 		generate_val ctx v;		
 		let jump_else = cjmp ctx in
@@ -1012,3 +995,14 @@ let generate file ~compress ~keep exprs =
 
 ;;
 generate_function_ref := generate_function;
+let swf = ref None in
+let keep = ref false in
+Plugin.add [
+	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
+	("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
+]
+(fun t ->
+	match !swf with 
+	| None -> () 
+	| Some f -> generate f ~keep:!keep ~compress:true (Typer.exprs t)
+);

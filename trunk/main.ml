@@ -102,16 +102,12 @@ try
 	let usage = "Motion-Twin ActionScript2 Compiler BETA-2 - (c)2004 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
 	let base_path = normalize_path (Extc.executable_path()) in
 	let files = ref [] in
-	let swf = ref None in
 	let time = Sys.time() in
-	let keep = ref false in
 	Plugin.class_path := [base_path ^ "std/"; base_path;""];
 	let args_spec = [
-		("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
-		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
-		("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
+		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 	] @ !Plugin.options in
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
 	if !files = [] then begin
@@ -124,9 +120,8 @@ try
 			ignore(Typer.load_class typer path Expr.null_pos);
 		) (List.rev !files);
 		Typer.finalize typer;
-		(match !swf with None -> () | Some f -> GenSwf.generate f ~keep:!keep ~compress:true (Typer.exprs typer));
-		if !Plugin.verbose then print_endline ("Time spent : " ^ string_of_float (Sys.time() -. time));
 		List.iter (fun f -> f typer) !Plugin.calls;
+		if !Plugin.verbose then print_endline ("Time spent : " ^ string_of_float (Sys.time() -. time));
 	end;
 with	
 	| Lexer.Error (m,p) -> report (m,p) "syntax error" Lexer.error_msg
