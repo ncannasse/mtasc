@@ -5,6 +5,7 @@
 	added delete call without parenthesis
 	fixed numbers starting with '.'
 	fixed Function object unify with any function.
+	fixed lexer for mac newlines.
 
 2004-11-09 : beta4
 	support for "arguments"
