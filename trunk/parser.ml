@@ -177,16 +177,24 @@ and parse_eval_next e = parser
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
 	| [< '(Unop op,p2) when is_postfix op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
-	| [< '(Const (Ident "instanceof"),p); v = parse_eval; e = parse_eval_next (ECall ((EConst (Ident "instanceof"),p),[e;v]),punion (pos e) (pos v)) >] -> e
+	| [< '(Const (Ident "instanceof"),p); v = parse_eval; s >] ->
+		let iof v = ECall ((EConst (Ident "instanceof"), p),[e;v]) , punion (pos e) (pos v) in
+		let rec loop = function			
+			| EBinop (op,e1,e2) , pv -> EBinop (op,loop e1,e2) , punion p pv
+			| v -> iof v
+		in
+		parse_eval_next (loop v) s
 	| [< >] -> e
 
 and parse_delete v = parser
 	| [< e = parse_eval; s >] ->
-		(match e with
-		| EBinop (op,e1,e2) , _ ->
-			parse_eval_next (EBinop (op,(ECall (v,[e1]), punion (pos e1) (pos v)),e2) , pos e) s
-		| _ ->
-			parse_eval_next (ECall (v , [e]) , punion (pos e) (pos v)) s)
+		let rec loop = function
+			| EBinop (op,e1,e2) , _ ->
+				EBinop (op,loop e1,e2) , punion (pos e) (pos v)
+			| e ->
+				ECall (v , [e]) , punion (pos e) (pos v)
+		in
+		parse_eval_next (loop e) s
 	| [< e = parse_eval_next v >] -> e 
 
 and parse_catches = parser
