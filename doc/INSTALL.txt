@@ -9,7 +9,10 @@ Quick Guide :
 - put the "install.ml" MTASC install script into a directory of your choice
 - configure ocaml and cvs so it can run from commandline
 - edit and *configure* install.ml (see below)
-- run the following command "ocaml install.ml" to run install script
+- run the following command "ocaml install.ml" to run compilation script
+- the binary can be found in the "bin" subdirectory of install.ml
+- you also need to copy somewhere on your system the "ocaml/mtasc/std"
+  subdirectory (and use -cp <path to std> for mtasc commandline).
 
 Configuration
 -------------
