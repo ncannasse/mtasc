@@ -1,4 +1,4 @@
-intrinsic class Object
+dynamic intrinsic class Object
 {
 	function watch(name:String, callback:Function, userData:Object):Boolean;
 	function unwatch(name:String):Boolean;
