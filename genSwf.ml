@@ -453,12 +453,10 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 		generate_ident ctx s p
 	| EField (v,s) ->
 		generate_val ctx v;
-		prerr_endline (" --> " ^ s);
 		push ctx [VStr s];
 		VarObj
 	| EStatic (p,s) ->
 		let k = generate_package ~fast:true ctx p in
-		prerr_endline (" * " ^ s);
 		push ctx [VStr s];
 		k
 	| EArray (va,vb) ->
