@@ -681,7 +681,8 @@ let rec type_class_fields ctx clctx (e,p) =
 		) vl
 	| EFunction f -> 
 		let t = Function (List.map (fun (_,t) -> t_opt ctx p t) f.fargs , ret_opt ctx p f) in
-		add_class_field ctx clctx f.fname f.fstatic f.fpublic f.fgetter t p;
+		let st = (if f.fname = snd clctx.path then IsStatic else f.fstatic) in
+		add_class_field ctx clctx f.fname st f.fpublic f.fgetter t p;
 		if f.fexpr <> None then add_finalizer ctx (fun () -> ignore(type_function ctx clctx f p));
 	| _ ->
 		assert false
