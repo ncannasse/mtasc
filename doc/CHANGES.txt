@@ -9,6 +9,7 @@
 	added "with"
 	added _levelXX
 	added scientific floats : 1.23e-23
+	fixed instanceof & typeof parsing.
 	
 2005-02-21 : 1.01
 	fixed doaction/showframe inversion
