@@ -37,6 +37,7 @@ type context =  {
 	ops : action DynArray.t;
 	super_bindings : (type_path * string,bool) Hashtbl.t;
 	locals : (string,local_ctx) Hashtbl.t;
+	mutable main : type_path option;
 	mutable current : Class.context;
 	mutable stack : int;
 	mutable code_pos : int;
@@ -87,6 +88,8 @@ let stack_delta = function
 	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf | ATargetPath -> 0
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
+
+let enable_main = ref true
 
 let write ctx op =
 	let write b op =
@@ -575,16 +578,10 @@ and generate_call ?(newcall=false) ctx v vl =
 	| EConst (Ident ("loadVariables" as x)) , params ->
 		generate_geturl ctx x params (pos v)
 	| EField ((EConst (Ident "super"),_),fname) , args ->
-		let path = Class.resolve_supervar ctx.current fname in
-		let ident = super_binding_ident path fname in
-		let nargs = List.length args + 1 in
-		List.iter (generate_val ctx) (List.rev args);		
-		push ctx [VThis; VInt nargs; VStr ident];
-		write ctx AEval;
-		push ctx [VStr "call"];
+		let nargs = List.length args in
+		List.iter (generate_val ctx) (List.rev args);
+		push ctx [VInt nargs; VSuper; VStr fname];		
 		call ctx VarObj nargs;
-		if not (Hashtbl.mem ctx.super_bindings (path,fname)) then
-			Hashtbl.add ctx.super_bindings (path,fname) false
 	| _ , _ ->
 		let nargs = List.length vl in
 		List.iter (generate_val ctx) (List.rev vl);
@@ -831,7 +828,7 @@ let generate_function ?(constructor=false) ctx f =
 	| Some fexpr ->
 		let old_name = ctx.curmethod in
 		let stack_base , old_nregs = ctx.stack , ctx.reg_count in
-		let reg_super = constructor && used_in_block true "super" fexpr in
+		let reg_super = used_in_block true "super" fexpr in
 		ctx.reg_count <- (if reg_super then 2 else 1);
 		if f.fname <> "" then ctx.curmethod <- f.fname;
 		ctx.stack <- ctx.stack + 1;
@@ -905,7 +902,13 @@ let generate_class_code ctx clctx =
 		| Some _ ->
 			push ctx [VReg (if f.fstatic = IsMember then 1 else 0)];
 			let name = (match f.fgetter with
-				| Normal -> f.fname
+				| Normal -> 
+					if f.fstatic = IsStatic && !enable_main then begin
+						match ctx.main with
+						| None -> ctx.main <- Some (Class.path clctx);
+						| Some _ -> failwith "Duplicate main entry point"
+					end;
+					f.fname
 				| Getter -> 
 					Hashtbl.add getters (f.fname,Getter,f.fstatic) ();
 					"__get__" ^ f.fname
@@ -980,6 +983,7 @@ let generate file ~compress exprs =
 				file , None)
 	in
 	let ctx = {
+		main = None;
 		idents = Hashtbl.create 0;
 		ops = DynArray.create();
 		super_bindings = Hashtbl.create 0;
@@ -1003,6 +1007,17 @@ let generate file ~compress exprs =
 		ctx.current <- clctx;
 		if not (Class.intrinsic clctx) then generate_class_code ctx clctx
 	) exprs;
+	(match ctx.main with
+	| None -> ()
+	| Some (p,clname) -> 
+		push ctx [VInt 0];
+		let k = generate_package ~fast:true ctx p in
+		push ctx [VStr clname];
+		getvar ctx k;
+		push ctx [VStr "main"];
+		call ctx VarObj 0;
+		write ctx APop
+	);
 	let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) ctx.idents [] in
 	let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
 	DynArray.set ctx.ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));
@@ -1083,6 +1098,7 @@ Plugin.add [
 	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
 	("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
 	("-frame",Arg.Int (fun i -> if i <= 0 then raise (Arg.Bad "Invalid frame"); frame := i),"<frame> : export into target frame (must exist in the swf)");
+	("-nomain",Arg.Unit (fun () -> enable_main := false),": disable main entry point, if exists");
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
 ]
 (fun t ->
