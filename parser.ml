@@ -180,8 +180,12 @@ and parse_eval_next e = parser
 	| [< >] -> e
 
 and parse_delete v = parser
-	| [< '(POpen,_); e = parse_eval; '(PClose,p2); e = parse_eval_next (ECall (v , [e]) , punion (pos v) p2) >] -> e
-	| [< e = parse_eval; e = parse_eval_next (ECall (v , [e]) , punion (pos e) (pos v)) >] -> e
+	| [< e = parse_eval; s >] ->
+		(match e with
+		| EBinop (op,e1,e2) , _ ->
+			parse_eval_next (EBinop (op,(ECall (v,[e1]), punion (pos e1) (pos v)),e2) , pos e) s
+		| _ ->
+			parse_eval_next (ECall (v , [e]) , punion (pos e) (pos v)) s)
 	| [< e = parse_eval_next v >] -> e 
 
 and parse_catches = parser
@@ -305,8 +309,10 @@ and parse_getter name = parser
 	| [< >] -> name , Normal
 
 and parse_include = parser 
-	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String _),p2) >] ->
-		if not !use_components then print_endline ("Warning : unsupported #include in " ^ p1.pfile)
+	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String inc),p2) >] ->
+		let t = "ComponentVersion.as" in
+		let tl = String.length t in
+		if String.length inc < tl || String.sub inc (String.length inc - tl) tl <> t then print_endline ("Warning : unsupported #include in " ^ p1.pfile)
 
 let parse code file =
 	let old = Lexer.save() in
