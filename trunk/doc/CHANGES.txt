@@ -1,4 +1,4 @@
-2004-11-XX : beta5 / 1.0 ?
+2004-11-17 : beta5
 	fixed back the Export name to "MTASC" (causing problem with -keep)
 	fixed member variable declaration with init value
 	fixed multivariable ops
