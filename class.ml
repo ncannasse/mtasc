@@ -189,6 +189,7 @@ and generate_class_static_refs h gen clctx v =
 		| EUnop (_,_,v) ->
 			loop v
 		| EArray (v1,v2) 
+		| ECast (v1,v2) 
 		| EBinop (_,v1,v2) ->
 			loop v1;
 			loop v2

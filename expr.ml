@@ -153,6 +153,7 @@ and eval_def =
 	| EQuestion of eval * eval * eval
 	| ELambda of func
 	| EStatic of type_path
+	| ECast of eval * eval
 
 and eval = eval_def * pos
 
