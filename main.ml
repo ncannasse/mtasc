@@ -139,11 +139,11 @@ try
 		Arg.usage args_spec usage
 	end else begin
 		if !Plugin.verbose then print_endline ("Classpath : " ^ (String.concat ";" !Plugin.class_path));
-		let typer = Typer.create !Plugin.class_path in
-		(try
-			ignore(Typer.load_class typer ([],"StdPresent") Expr.null_pos);
-		with
-			Typer.Error (Typer.Class_not_found ([],"StdPresent"),_) -> failwith "Directory 'std' containing MTASC class headers cannot be found :\nPlease install it or set classpath using '-cp' so it can be found.");
+		let typer = (try
+				Typer.create !Plugin.class_path
+			with
+				Typer.Error (Typer.Class_not_found ([],"StdPresent"),_) -> failwith "Directory 'std' containing MTASC class headers cannot be found :\nPlease install it or set classpath using '-cp' so it can be found.")
+		in
 		List.iter (fun file ->			
 			let path = class_name file in
 			ignore(Typer.load_class typer path Expr.null_pos);
