@@ -1280,14 +1280,16 @@ let make_header s =
 	try
 		match sl with
 		| [w;h;fps] ->
+			let w = int_of_string w in
+			let h = int_of_string h in
 			{
 				h_version = 7;
 				h_size = {
-					rect_nbits = 15;
+					rect_nbits = if (max w h) >= 820 then 16 else 15;
 					left = 0;
 					top = 0;
-					right = int_of_string w * 20;
-					bottom = int_of_string h * 20;
+					right = w * 20;
+					bottom = h * 20;
 				};
 				h_frame_count = 1;
 				h_fps = to_float16 (float_of_string fps);
