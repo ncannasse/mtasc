@@ -1,10 +1,12 @@
-2004-12-?? : beta7
+2004-12-08 : beta7
 	released restriction on super
 	fixed imports in lambdas
 	pop instead of trace for string mark.
 	fixed missing implementation of import wildcards for genSwf
 	fixed bug when accessing superclass in static.
 	no strict mode for native classes.
+	fixed multiple implements syntax
+	allowed private access to local class variables in lambdas
 	
 2004-11-22 : beta6
 	fixed stack overflow in parsing metadata
