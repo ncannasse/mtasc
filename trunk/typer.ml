@@ -187,6 +187,7 @@ let rec unify ta tb p =
 	| Static _, Class c when c.super == c -> () (* unify with Object *)
 	| Static _ , Class cl
 	| Class cl, Static _
+	| Class cl, Function _
 	| Function _ , Class cl	when is_function cl -> ()
 	| _ , _ ->
 		error (Cannot_unify (ta,tb)) p

@@ -1,5 +1,6 @@
 2005-01-?? : rc2
 	fixed throw parsing
+	fixed <fun> , Function unification
 	
 2005-01-05 : rc1
 	private methods can be called from childs
