@@ -100,8 +100,8 @@ let compile() =
 	ocamlc "-pp camlp4o parser.ml";
 	ocamlc "-I .. -I ../extc -I ../swflib checker.ml typer.ml class.ml plugin.ml genSwf.ml main.ml";
 	let mlist = ["expr";"lexer";"parser";"checker";"typer";"class";"plugin";"genSwf";"main"] in
-	if bytecode then command ("ocamlc -custom -o ../../bin/mtasc-byte" ^ exe_ext ^ " ../extLib.cma ../extc/extc.cma ../swflib/swfLib.cma " ^ modules mlist ".cmo");
-	if native then command ("ocamlopt -o ../../bin/mtasc" ^ exe_ext ^ " ../extLib.cmxa ../extc/extc.cmxa ../swflib/swfLib.cmxa " ^ modules mlist ".cmx");
+	if bytecode then command ("ocamlc -custom -o ../../bin/mtasc-byte" ^ exe_ext ^ " ../extLib.cma ../extc/extc.cma ../swflib/swflib.cma " ^ modules mlist ".cmo");
+	if native then command ("ocamlopt -o ../../bin/mtasc" ^ exe_ext ^ " ../extLib.cmxa ../extc/extc.cmxa ../swflib/swflib.cmxa " ^ modules mlist ".cmx");
 
 in
 let startdir = Sys.getcwd() in
