@@ -400,6 +400,17 @@ let rec resolve_package ctx v (p : string list) pos =
 	| cname :: fields ->
 		let rec access p = function
 			| [] -> EStatic p
+			| [x] ->
+				let rec loop cl =
+					if Hashtbl.mem cl.statics x then
+						cl.path
+					else if cl.super == cl then
+						p
+					else
+						loop cl.super
+				in
+				let p = loop (!load_class_ref ctx p pos) in
+				EField (((EStatic p),pos),x)
 			| x :: l -> EField ((access p l , pos), x)
 		in
 		let rec search_package p =
