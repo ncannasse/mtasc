@@ -1085,6 +1085,7 @@ let separate = ref false
 let keep = ref false
 let frame = ref 1
 let header = ref None
+let excludes = Hashtbl.create 0
 
 let generate file ~compress exprs =
 	let file , linkage =
@@ -1134,7 +1135,7 @@ let generate file ~compress exprs =
 			else 
 				ctx
 		) in
-		if not (Class.intrinsic clctx) then begin
+		if not (Class.intrinsic clctx) && not (Hashtbl.mem excludes (s_type_path (Class.path clctx))) then begin
 			if !separate then DynArray.add ctx.ops (AStringPool []);
 			generate_class_code ctx clctx;
 			if !separate then tags := ("__Packages." ^ s_type_path (Class.path clctx),ctx.idents,ctx.ops) :: !tags;
@@ -1254,7 +1255,13 @@ let make_header s =
 		| _ ->
 			raise Exit
 	with
-		_ -> raise (Arg.Bad "Invalid header format");
+		_ -> raise (Arg.Bad "Invalid header format")
+
+let exclude_file f =
+	let ch = open_in f in
+	let lines = Std.input_list ch in
+	close_in ch;
+	List.iter (fun f -> Hashtbl.add excludes f ()) lines
 
 ;;
 generate_function_ref := generate_function;
@@ -1267,6 +1274,7 @@ Plugin.add [
 	("-main",Arg.Unit (fun () -> enable_main := true),": enable main entry point");
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
 	("-separate",Arg.Unit (fun () -> separate := true),": separate classes into different clips");
+	("-exclude",Arg.String (fun f -> exclude_file f),"<file> : exclude classes listed in file");
 ]
 (fun t ->
 	match !swf with 
