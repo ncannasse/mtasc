@@ -103,18 +103,23 @@ try
 	let base_path = normalize_path (Extc.executable_path()) in
 	let files = ref [] in
 	let time = Sys.time() in
-	Plugin.class_path := [base_path ^ "std/"; base_path;""];
+	Plugin.class_path := [base_path;""];
 	let args_spec = [
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 	] @ !Plugin.options in
+	Plugin.class_path := (base_path ^ "std/") :: !Plugin.class_path;
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
 	if !files = [] then begin
 		Arg.usage args_spec usage
 	end else begin
 		if !Plugin.verbose then print_endline ("Classpath : " ^ (String.concat ";" !Plugin.class_path));
 		let typer = Typer.create !Plugin.class_path in
+		(try
+			ignore(Typer.load_class typer ([],"StdPresent") Expr.null_pos);
+		with
+			Typer.Error (Typer.Class_not_found ([],"StdPresent"),_) -> failwith "Directory 'std' containing MTASC class headers cannot be found :\nPlease install it or set classpath using '-cp' so it can be found.");
 		List.iter (fun file ->			
 			let path = class_name file in
 			ignore(Typer.load_class typer path Expr.null_pos);
