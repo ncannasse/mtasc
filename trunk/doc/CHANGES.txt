@@ -1,5 +1,8 @@
 2005-03-?? : 1.02
 	test if class already exists (multiple swf statics init)
+	-frame now works with -header
+	fixed "class Number not found" when no std
+	relaxed restriction on input file names
 	
 2005-02-21 : 1.01
 	fixed doaction/showframe inversion

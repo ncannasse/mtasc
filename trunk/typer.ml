@@ -90,6 +90,8 @@ let verbose = ref false
 let strict_mode = ref false
 let use_components = ref false
 
+let argv_pos = { pfile = "<argv>"; pmin = -1; pmax = -1 }
+
 let error msg p = raise (Error (msg,p))
 
 let rec s_type_decl = function
@@ -793,7 +795,9 @@ let type_file ctx req_path file el pos =
 		wildcards = [];
 	} in
 	let error t p =
-		if pos = null_pos then
+		if pos = argv_pos then
+			()
+		else if pos = null_pos then
 			error (Class_name_mistake req_path) p
 		else
 			error (Class_name_mistake t) pos
@@ -890,6 +894,7 @@ let create cpath =
 		frame = 0;
 	} in
 	add_finalizer ctx (check_interfaces ctx);
+	ignore(load_class ctx ([],"StdPresent") null_pos);
 	ctx.inumber <- Class (load_class ctx ([],"Number") null_pos);
 	ctx.ibool <- Class (load_class ctx ([],"Boolean") null_pos);
 	ctx.istring <- Class (load_class ctx ([],"String") null_pos);
