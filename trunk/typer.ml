@@ -391,6 +391,8 @@ let rec type_binop ctx op v1 v2 p =
 		unify t2 t1 p;
 		t1
 	| OpEq
+	| OpPhysEq
+	| OpPhysNotEq
 	| OpNotEq
 	| OpGt
 	| OpGte

@@ -501,6 +501,10 @@ and generate_binop retval ctx op v1 v2 =
 	| OpDiv -> gen ADivide
 	| OpSub -> gen ASubtract
 	| OpEq -> gen AEqual
+	| OpPhysEq -> gen APhysEqual
+	| OpPhysNotEq ->
+		gen APhysEqual;
+		write ctx ANot
 	| OpNotEq -> 
 		gen AEqual;
 		write ctx ANot

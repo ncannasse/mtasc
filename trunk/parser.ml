@@ -35,7 +35,7 @@ let error m p = raise (Error (m,p))
 let priority = function
 	| OpAssign | OpAssignOp _ -> -3
 	| OpBoolAnd | OpBoolOr -> -2
-	| OpEq | OpNotEq | OpGt | OpLt | OpGte | OpLte -> -1
+	| OpEq | OpNotEq | OpGt | OpLt | OpGte | OpLte | OpPhysEq | OpPhysNotEq -> -1
 	| OpAdd | OpSub -> 0
 	| OpMult | OpDiv -> 1
 	| OpOr | OpAnd | OpXor -> 2
