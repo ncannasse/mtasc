@@ -7,6 +7,8 @@
 	NetConnection is now dynamic
 	trace() takes any object, not just Strings
 	main is turned off by default, use -main
+	added try/catch/finally+throw support
+	added documentation tutorial
 
 2004-12-08 : beta7
 	released restriction on super
