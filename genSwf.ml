@@ -67,7 +67,7 @@ let stack_delta = function
 	| AAdd | ADivide | ASubtract | AMultiply | AMod -> -1
 	| AAnd | AOr | AXor | AShl | AShr | AAsr -> -1
 	| ACompare | AGreater -> -1
-	| AEval | ANot | AJump _ | AToInt | AToString -> 0
+	| AEval | ANot | AJump _ | AToInt | AToString | ATry _ | ASwap -> 0
 	| ACondJump _ -> -1
 	| AEqual | APhysEqual -> -1
 	| ANew -> -1 (** only if 0 params **)
@@ -84,7 +84,7 @@ let stack_delta = function
 	| AGetURL2 _ -> -1
 	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
-	| AEnum2 | ATrace -> -1
+	| AEnum2 | ATrace | AThrow -> -1
 	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf | ATargetPath -> 0
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
@@ -319,6 +319,8 @@ let rec used_in_block curblock vname e =
 			vloop v || loop e
 		| ESwitch (v,cases,eopt) ->
 			vloop v || List.exists (fun (v,e) -> vloop v || loop e) cases || (match eopt with None -> false | Some e -> loop e)
+		| ETry (e,cl,fopt) ->
+			loop e || List.exists (fun (n,_,e) -> vname = n || loop e) cl || (match fopt with None -> false | Some e -> loop e)
 		| EReturn (Some v) ->
 			vloop v
 		| EVal v ->
@@ -565,6 +567,9 @@ and generate_call ?(newcall=false) ctx v vl =
 		(match generate_access ~forcall:true ctx v with
 		| VarObj -> write ctx ADeleteObj
 		| _ -> write ctx ADelete)
+	| EConst (Ident "throw") , [v] ->
+		generate_val ctx v;
+		write ctx AThrow
 	| EConst (Ident "eval") , [v] ->
 		generate_val ctx v;
 		write ctx AEval
@@ -821,6 +826,66 @@ let rec generate_expr ctx (e,p) =
 		| Some e ->
 			generate_expr ctx e);
 		generate_breaks ctx old_breaks
+	| ETry (e,cl,fo) ->
+		let tdata = {
+			tr_style = TryRegister 0;
+			tr_trylen = 0;
+			tr_catchlen = None;
+			tr_finallylen = None;
+		} in
+		write ctx (ATry tdata);
+		let p = ctx.code_pos in
+		generate_expr ctx e;
+		let jump_end = jmp ctx in
+		tdata.tr_trylen <- ctx.code_pos - p;
+		let p = ctx.code_pos in
+		let end_throw = ref true in
+		let first_catch = ref true in
+		let jumps = List.map (fun (name,t,e) ->
+			Hashtbl.add ctx.locals name { reg = 0; sp = ctx.stack };
+			let next_catch = (match t with
+			| None -> 
+				end_throw := false;
+				write ctx APop;
+				push ctx [VStr name;VReg 0];
+				write ctx ALocalAssign;
+				generate_expr ctx e;
+				(fun() -> ())
+			| Some t ->
+				if not !first_catch then write ctx APop;
+				getvar ctx (generate_access ctx (EStatic t,pos e));
+				push ctx [VReg 0];
+				write ctx ACast;
+				write ctx ADup;
+				push ctx [VNull];
+				write ctx AEqual;
+				let c = cjmp ctx in
+				push ctx [VStr name];
+				write ctx ASwap;
+				write ctx ALocalAssign;
+				generate_expr ctx e;
+				c
+			) in
+			first_catch := false;
+			let j = jmp ctx in
+			next_catch();
+			Hashtbl.remove ctx.locals name;
+			j
+		) cl in
+		if !end_throw then begin
+			write ctx APop;
+			push ctx [VReg 0];
+			write ctx AThrow;
+		end;
+		if cl <> [] then tdata.tr_catchlen <- Some (ctx.code_pos - p);
+		List.iter (fun j -> j()) jumps;
+		jump_end();
+		(match fo with
+		| None -> ()
+		| Some e ->
+			let p = ctx.code_pos in
+			generate_expr ctx e;
+			tdata.tr_finallylen <- Some (ctx.code_pos - p))
 
 let generate_function ?(constructor=false) ctx f =
 	match f.fexpr with

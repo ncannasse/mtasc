@@ -218,6 +218,8 @@ let ret_opt ctx p f =
 			has_return e
 		| ESwitch (_,cases,def) ->
 			List.exists (fun (_,e) -> has_return e) cases || (match def with None -> false | Some e -> has_return e)
+		| ETry (e,cl,fo) ->			
+			(has_return e) || List.exists (fun (_,_,e) -> has_return e) cl || (match fo with None -> false | Some e -> has_return e)
 		| EReturn (Some _ ) ->
 			true
 	in
@@ -638,6 +640,20 @@ let rec type_expr ctx (e,p) =
 			type_expr ctx e
 		) cases;
 		(match def with None -> () | Some e -> type_expr ctx e)
+	| ETry (e,cl,fo) ->
+		type_expr ctx e;
+		let no_type = ref false in
+		List.iter (fun (name,t,e) -> 
+			if t = None then begin
+				if !no_type then error (Custom "Misplaced catch will fail to catch any exception") (pos e);
+				no_type := true;
+			end;
+			let f = new_frame ctx in
+			define_local ctx name (t_opt ctx p t) p;
+			type_expr ctx e;
+			clean_frame ctx f
+		) cl;
+		(match fo with None -> () | Some e -> type_expr ctx e)
 	| EReturn None ->
 		if ctx.returns <> Void && ctx.returns <> Dyn then error (Custom "Return type cannot be Void") p;
 	| EReturn (Some v) ->
