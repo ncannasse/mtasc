@@ -37,7 +37,7 @@ type context =  {
 	ops : action DynArray.t;
 	super_bindings : (type_path * string,bool) Hashtbl.t;
 	locals : (string,local_ctx) Hashtbl.t;
-	mutable main : type_path option;
+	main : type_path option ref;
 	mutable current : Class.context;
 	mutable stack : int;
 	mutable code_pos : int;
@@ -979,8 +979,8 @@ let generate_class_code ctx clctx =
 			let name = (match f.fgetter with
 				| Normal -> 
 					if f.fname = "main" && f.fstatic = IsStatic && !enable_main then begin
-						match ctx.main with
-						| None -> ctx.main <- Some (Class.path clctx);
+						match !(ctx.main) with
+						| None -> ctx.main := Some (Class.path clctx);
 						| Some path -> failwith ("Duplicate main entry point : " ^ s_type_path path ^ " and " ^ s_type_path (Class.path clctx))
 					end;
 					f.fname
@@ -1066,7 +1066,7 @@ let generate file ~compress exprs =
 				file , None)
 	in
 	let ctx = {
-		main = None;
+		main = ref None;
 		idents = Hashtbl.create 0;
 		ops = DynArray.create();
 		super_bindings = Hashtbl.create 0;
@@ -1109,21 +1109,21 @@ let generate file ~compress exprs =
 			generate_class_code ctx clctx;
 			if !separate then tags := ("__Packages." ^ s_type_path (Class.path clctx),ctx.idents,ctx.ops) :: !tags;
 		end;
-	) exprs;
-	if not !separate then tags := [("__Packages.MTASC",ctx.idents,ctx.ops)];
-	(match ctx.main with
+	) exprs;	
+	(match !(ctx.main) with
 	| None ->
 		if !enable_main then failwith "Main entry point not found";
 	| Some (p,clname) -> 
-		if !separate then failwith "-separate and -main are incompatible";
 		push ctx [VInt 0];
 		let k = generate_package ~fast:true ctx p in
 		push ctx [VStr clname];
 		getvar ctx k;
 		push ctx [VStr "main"];
 		call ctx VarObj 0;
-		write ctx APop
+		write ctx APop;
 	);
+	tags := ("__Packages.MTASC",ctx.idents,ctx.ops) :: !tags;
+	tags := List.rev !tags;
 	List.iter (fun (n,idents,ops) ->
 		let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) idents [] in
 		let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
