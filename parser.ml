@@ -41,9 +41,13 @@ let priority = function
 	| OpOr | OpAnd | OpXor -> 2
 	| OpShl | OpShr | OpMod | OpUShr -> 3
 
+let is_not_assign = function
+	| OpAssign | OpAssignOp _ -> false
+	| _ -> true
+
 let rec make_binop op e ((v,p2) as e2) =
 	match v with
-	| EBinop (_op,_e,_e2) when priority _op <= priority op && (_op <> OpAssign || op <> OpAssign) ->
+	| EBinop (_op,_e,_e2) when priority _op <= priority op && (is_not_assign _op || is_not_assign op) ->
 		let _e = make_binop op e _e in
 		EBinop (_op,_e,_e2) , punion (pos _e) (pos _e2)
 	| _ ->
@@ -137,6 +141,7 @@ and parse_eval = parser
 			fpublic = IsPublic;
 			fexpr = Some e;
 		} , punion p1 (pos e)) >] -> v
+	| [< '(Const (Ident "delete"),p1); e = parse_delete (EConst (Ident "delete"),p1) >] -> e
 	| [< '(Const (Ident "new"),p1); p = parse_class_path; e = parse_new (EStatic p,p1) p1 >] -> e
 	| [< '(Const c,p); e = parse_eval_next (EConst c,p)  >] -> e
 	| [< '(POpen,p1); e = parse_eval; '(PClose,p2); e = parse_eval_next (EParenthesis e , punion p1 p2) >] -> e
@@ -154,6 +159,10 @@ and parse_eval_next e = parser
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
 	| [< '(Const (Ident "instanceof"),p); v = parse_eval; e = parse_eval_next (ECall ((EConst (Ident "instanceof"),p),[e;v]),punion (pos e) (pos v)) >] -> e
 	| [< >] -> e
+
+and parse_delete v = parser
+	| [< e = parse_eval >] -> ECall (v , [e]) , punion (pos e) (pos v)
+	| [< e = parse_eval_next v >] -> e 
 
 and parse_new e p1 = parser
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ENew (e,args), punion p1 p2) >] -> e	
