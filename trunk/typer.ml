@@ -300,6 +300,10 @@ and type_ident ctx name e p =
 		Not_found ->
 	(* member variable lookup *)
 	try
+		if name = snd ctx.current.path then begin
+			set_eval e (EStatic ctx.current.path);
+			Static ctx.current
+		end else
 		let f = (match resolve (Class ctx.current) name with None -> raise Not_found | Some f -> f) in
 		if ctx.in_static then error (Custom ("Cannot access member variable " ^ name ^" in static function")) p;
 		set_eval e (EField ((EConst (Ident "this"),p),name));
