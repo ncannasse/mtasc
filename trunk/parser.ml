@@ -267,7 +267,7 @@ and parse_import2 name = parser
 
 and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()
-	| [< _ ; () = parse_metadata >] -> ()
+	| [< '(_) ; () = parse_metadata >] -> ()
 
 and parse_getter name = parser
 	| [< '(Const (Ident fname),_); >] -> 
