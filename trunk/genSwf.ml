@@ -906,10 +906,10 @@ let generate_class_code ctx clctx =
 			let name = (match f.fgetter with
 				| Normal -> f.fname
 				| Getter -> 
-					Hashtbl.add getters (f.fname,Getter) ();
+					Hashtbl.add getters (f.fname,Getter,f.fstatic) ();
 					"__get__" ^ f.fname
 				| Setter -> 
-					Hashtbl.add getters (f.fname,Setter) ();
+					Hashtbl.add getters (f.fname,Setter,f.fstatic) ();
 					"__set__" ^ f.fname)
 			in
 			push ctx [VStr name];
@@ -917,27 +917,29 @@ let generate_class_code ctx clctx =
 			setvar ctx VarObj;
 	) (Class.methods clctx);
 	let dones = Hashtbl.create 0 in
-	Hashtbl.iter (fun (name,get) _ ->
-		if Hashtbl.mem dones (name,get) then
+	Hashtbl.iter (fun (name,get,stat) _ ->
+		if Hashtbl.mem dones (name,get,stat) then
 			()
 		else
-		let getter = (get = Getter || Hashtbl.mem getters (name,Getter)) in
-		let setter = (get = Setter || Hashtbl.mem getters (name,Setter)) in
-		Hashtbl.add dones (name,Getter) ();
-		Hashtbl.add dones (name,Setter) ();
+		let reg = (if stat = IsMember then 1 else 0) in
+		let getter = (get = Getter || Hashtbl.mem getters (name,Getter,stat)) in
+		let setter = (get = Setter || Hashtbl.mem getters (name,Setter,stat)) in
+		Hashtbl.add dones (name,Getter,stat) ();
+		Hashtbl.add dones (name,Setter,stat) ();
 		if setter then begin
-			push ctx [VReg 1; VStr ("__set__" ^ name)];
+			push ctx [VReg reg; VStr ("__set__" ^ name)];
 			getvar ctx VarObj;
 		end else
 			push ctx [VNull];
 		if getter then begin
-			push ctx [VReg 1; VStr ("__get__" ^ name)];
+			push ctx [VReg reg; VStr ("__get__" ^ name)];
 			getvar ctx VarObj;
 		end else
 			push ctx [VNull];
 		push ctx [VStr name; VInt 3];
-		push ctx [VReg 1; VStr "addProperty"];
-		call ctx VarObj 3
+		push ctx [VReg reg; VStr "addProperty"];
+		call ctx VarObj 3;
+		write ctx APop;
 	) getters;
 	List.iter (fun cintf ->
 		getvar ctx (generate_access ctx (EStatic (Class.path cintf),null_pos));
@@ -950,6 +952,7 @@ let generate_class_code ctx clctx =
 	end;
 	push ctx [VInt 1; VNull; VReg 1; VInt 3; VStr "ASSetPropFlags"];
 	call ctx VarStr 3;
+	write ctx APop;
 	List.iter (fun (name,v) ->
 		push ctx [VReg 0; VStr name];
 		generate_val ctx v;

@@ -193,12 +193,12 @@ let ret_opt ctx clctx p f =
 		| Some cp -> error (Custom ("Missing return of type " ^ s_type_path cp)) p)
 	| _ -> t_opt ctx clctx p f.ftype
 
-let add_class_field ctx clctx fname stat pub get ft p =
+let rec add_class_field ctx clctx fname stat pub get ft p =
 	let h = (match stat with IsStatic -> clctx.statics | IsMember -> clctx.fields) in
 	let f = (try Some (Hashtbl.find h fname) with Not_found -> None) in
 	match get with
 	| Getter | Setter ->
-		if stat = IsStatic then error (Custom "Static getter/setter are not allowed") p;
+		add_class_field ctx clctx ((if get = Getter then "__get__" else "__set__") ^ fname) stat pub Normal ft p;
 		let t = (if get = Getter then 
 					(match ft with Function (_,x) -> x | _ -> assert false)
 				else
@@ -216,7 +216,7 @@ let add_class_field ctx clctx fname stat pub get ft p =
 			{
 				f_name = fname;
 				f_type = t;
-				f_static = IsMember;
+				f_static = stat;
 				f_public = pub;
 				f_pos = p;
 			}
@@ -224,7 +224,7 @@ let add_class_field ctx clctx fname stat pub get ft p =
 			{
 				f_name = fname;
 				f_type = begin unify f.f_type t f.f_pos; unify t f.f_type p; t end;
-				f_static = IsMember;
+				f_static = stat;
 				f_public = (if pub <> f.f_public then error (Custom "Getter and setter have different public/private visibility") p else pub);
 				f_pos = p;
 			}
