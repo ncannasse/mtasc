@@ -122,6 +122,11 @@ type public_flag =
 	| IsPublic
 	| IsPrivate
 
+type getter_flag =
+	| Normal
+	| Getter
+	| Setter
+
 type type_path = string list * string
 
 type func = {
@@ -130,6 +135,7 @@ type func = {
 	ftype : type_path option;
 	fstatic : static_flag;
 	fpublic : public_flag;
+	fgetter : getter_flag;
 	fexpr : expr option;
 }
 
