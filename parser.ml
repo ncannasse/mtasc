@@ -102,13 +102,14 @@ and parse_field_flags stat pub = parser
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); '(Const (Ident name),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); g = parse_getter; '(Const (Ident name),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
 			fname = name;
 			fargs = args;
 			ftype = t;
 			fstatic = stat;
 			fpublic = pub;
+			fgetter = g;
 			fexpr = if interf then None else Some (parse_expr s);
 		} , punion p1 p2
 
@@ -131,6 +132,7 @@ and parse_eval = parser
 			fname = "";
 			fargs = args;
 			ftype = t;
+			fgetter = Normal;
 			fstatic = IsStatic;
 			fpublic = IsPublic;
 			fexpr = Some e;
@@ -255,6 +257,11 @@ and parse_import2 name = parser
 and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()
 	| [< _ ; () = parse_metadata >] -> ()
+
+and parse_getter = parser
+	| [< '(Const (Ident "get"),_); >] -> Getter
+	| [< '(Const (Ident "set"),_); >] -> Setter
+	| [< >] -> Normal
 
 let parse code file =
 	let old = Lexer.save() in

@@ -125,6 +125,34 @@ let resolve_path clctx = function
 		with
 			Not_found -> [] , n
 
+(* check that ta >= tb *)
+let rec unify ta tb p =
+	match ta , tb with
+	| Dyn , x | x , Dyn when x <> Void -> ()
+	| Void , Void -> ()
+	| Static c , Function _ -> ()
+	| Function (args1,r1) , Function (args2,r2) ->
+		let rec loop a1 a2 = 
+			match a1 , a2 with
+			| x :: l1, y :: l2 -> unify x y p; loop l1 l2
+			| _ , _ -> ()
+		in
+		loop args1 args2;
+		unify r2 r1 p
+	| Class cl1, Class cl2 ->
+		let rec loop cl1 =
+			if cl1 == cl2 || List.exists ((==) cl2) cl1.implements then
+				()
+			else if cl1.super == cl1 then
+				error (Cannot_unify (ta,tb)) p
+			else
+				loop cl1.super
+		in
+		loop cl1
+	| Static _, Class c when c.super == c -> ()
+	| _ , _ ->
+		error (Cannot_unify (ta,tb)) p
+
 let t_opt ctx clctx p = function
 	| None -> Dyn
 	| Some t -> 
@@ -165,16 +193,52 @@ let ret_opt ctx clctx p f =
 		| Some cp -> error (Custom ("Missing return of type " ^ s_type_path cp)) p)
 	| _ -> t_opt ctx clctx p f.ftype
 
-let add_class_field ctx clctx fname stat pub ft p =
+let add_class_field ctx clctx fname stat pub get ft p =
 	let h = (match stat with IsStatic -> clctx.statics | IsMember -> clctx.fields) in
-	if Hashtbl.mem h fname then error (Custom ("Field redefiniton : " ^ fname)) p;
-	Hashtbl.add h fname {
-		f_name = fname;
-		f_type = ft;
-		f_static = stat;
-		f_public = pub;
-		f_pos = p;
-	}
+	let f = (try Some (Hashtbl.find h fname) with Not_found -> None) in
+	match get with
+	| Getter | Setter ->
+		if stat = IsStatic then error (Custom "Static getter/setter are not allowed") p;
+		let t = (if get = Getter then 
+					(match ft with Function (_,x) -> x | _ -> assert false)
+				else
+					(match ft with 
+					| Function ([arg],r) -> 
+						if r <> Void then error (Custom "Setter should not return any value") p;
+						arg 
+					| Function _ ->
+						error (Custom "Setter can only have one parameter") p
+					| _ -> assert false)
+				)
+		in
+		let f = (match f with 
+		| None -> 
+			{
+				f_name = fname;
+				f_type = t;
+				f_static = IsMember;
+				f_public = pub;
+				f_pos = p;
+			}
+		| Some f ->
+			{
+				f_name = fname;
+				f_type = begin unify f.f_type t f.f_pos; unify t f.f_type p; t end;
+				f_static = IsMember;
+				f_public = (if pub <> f.f_public then error (Custom "Getter and setter have different public/private visibility") p else pub);
+				f_pos = p;
+			}
+		) in
+		Hashtbl.replace h fname f
+	| Normal ->
+		if f <> None then error (Custom ("Field redefiniton : " ^ fname)) p;
+		Hashtbl.add h fname {
+			f_name = fname;
+			f_type = ft;
+			f_static = stat;
+			f_public = pub;
+			f_pos = p;
+		}
 
 let is_dynamic = function
 	| Dyn | Function _ | Package _ -> true
@@ -201,34 +265,6 @@ let clean_frame ctx f =
 	Hashtbl.iter (fun n l ->
 		if l.lf > f then Hashtbl.remove ctx.locals n;
 	) ctx.locals
-
-(* check that ta >= tb *)
-let rec unify ta tb p =
-	match ta , tb with
-	| Dyn , x | x , Dyn when x <> Void -> ()
-	| Void , Void -> ()
-	| Static c , Function _ -> ()
-	| Function (args1,r1) , Function (args2,r2) ->
-		let rec loop a1 a2 = 
-			match a1 , a2 with
-			| x :: l1, y :: l2 -> unify x y p; loop l1 l2
-			| _ , _ -> ()
-		in
-		loop args1 args2;
-		unify r2 r1 p
-	| Class cl1, Class cl2 ->
-		let rec loop cl1 =
-			if cl1 == cl2 || List.exists ((==) cl2) cl1.implements then
-				()
-			else if cl1.super == cl1 then
-				error (Cannot_unify (ta,tb)) p
-			else
-				loop cl1.super
-		in
-		loop cl1
-	| Static _, Class c when c.super == c -> ()
-	| _ , _ ->
-		error (Cannot_unify (ta,tb)) p
 
 let rec resolve t fname =
 	match t with
@@ -596,7 +632,7 @@ let rec type_class_fields ctx clctx (e,p) =
 	| EVars (stat,pub,vl) ->
 		List.iter (fun (vname,vtype,vinit) ->
 			let t = t_opt ctx clctx p vtype in
-			add_class_field ctx clctx vname stat pub t p;
+			add_class_field ctx clctx vname stat pub Normal t p;
 			match vinit with
 			| None -> ()
 			| Some v ->
@@ -607,7 +643,7 @@ let rec type_class_fields ctx clctx (e,p) =
 		) vl
 	| EFunction f -> 
 		let t = Function (List.map (fun (_,t) -> t_opt ctx clctx p t) f.fargs , ret_opt ctx clctx p f) in
-		add_class_field ctx clctx f.fname f.fstatic f.fpublic t p;
+		add_class_field ctx clctx f.fname f.fstatic f.fpublic f.fgetter t p;
 		if f.fexpr <> None then add_finalizer ctx (fun () -> ignore(type_function ctx clctx f p));
 	| _ ->
 		assert false

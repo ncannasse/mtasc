@@ -56,6 +56,7 @@ type push_style =
 	| VInt of int
 	| VInt32 of int32
 	| VFloat of float
+	| VReg of int
 	| VThis
 	| VNull
 	| VSuper
@@ -167,6 +168,8 @@ let push ctx items =
 			PNull
 		| VSuper ->
 			PReg 2
+		| VReg n ->
+			PReg n
 	) items))
 
 let rec pop ctx n =
@@ -227,7 +230,7 @@ let setvar ?(retval=false) ctx = function
 
 let getvar ctx = function
 	| VarReg (-1) -> () (** true, false, null **)
-	| VarReg n -> write ctx (APush [PReg n])
+	| VarReg n -> push ctx [VReg n]
 	| VarStr -> write ctx AEval
 	| VarObj -> write ctx AObjGet
 
@@ -662,7 +665,7 @@ and generate_val ?(retval=true) ctx (v,p) =
 		write ctx (match op with Increment -> AIncrement | Decrement -> ADecrement | _ -> assert false);
 		if retval && flag = Prefix then write ctx (ASetReg 0);
 		setvar ctx k;
-		if retval && flag = Prefix then write ctx (APush [PReg 0])
+		if retval && flag = Prefix then push ctx [VReg 0]
 
 let generate_local_var ctx (vname,_,vinit) =
 	if used_in_block false vname ctx.cur_block then begin
@@ -735,13 +738,12 @@ let rec generate_expr ctx (e,p) =
 		let jump_end = cjmp ctx in
 		(match fst decl with
 		| EVal (EConst (Ident x),_) ->
-			push ctx [VStr x];
-			write ctx (APush [PReg 0]);
+			push ctx [VStr x; VReg 0];
 			write ctx ASet;
 		| EVars (_,_,[(x,_,None) as l]) ->
 			push ctx [VStr x];
 			Hashtbl.add ctx.locals x { reg = 0; sp = ctx.stack };
-			write ctx (APush [PReg 0]);
+			push ctx [VReg 0];
 			write ctx ALocalAssign
 		| _ ->
 			error (pos decl));
@@ -804,7 +806,7 @@ let rec generate_expr ctx (e,p) =
 			if !first_case then
 				first_case := false
 			else
-				write ctx (APush [PReg 0]);
+				push ctx [VReg 0];
 			generate_val ctx v;
 			write ctx APhysEqual;
 			cjmp ctx , e
@@ -845,6 +847,11 @@ let generate_function ?(constructor=false) ctx f =
 		) f.fargs in		
 		let fdone = func ctx args reg_super in
 		generate_expr ctx fexpr;
+		if f.fgetter = Setter then begin
+			push ctx [VInt 0;VThis;VStr ("__get__"^f.fname)];
+			call ctx VarObj 0;
+			write ctx AReturn;
+		end;
 		fdone (ctx.reg_count + 1);
 		clean_stack ctx stack_base;
 		ctx.reg_count <- old_nregs;
@@ -868,56 +875,83 @@ let generate_super_bindings ctx =
 
 let generate_class_code ctx clctx =
 	let cpath , cname = Class.path clctx in
-	let gen_full_path() =
-		let k = generate_package ctx cpath in
-		push ctx [VStr cname];
-		k
-	in
 	generate_package_register ctx cpath;
-	let k = gen_full_path() in
+	let k = generate_package ctx cpath in
+	push ctx [VStr cname];
 	(match Class.constructor clctx with
 	| None -> 
 		let fdone = func ctx [] true in
 		fdone 3;
 	| Some f ->
 		generate_function ~constructor:true ctx f);
+	write ctx (ASetReg 0);
 	setvar ctx k;
+	push ctx [VReg 0; VStr "prototype"];
+	getvar ctx VarObj;
+	write ctx (ASetReg 1);
+	write ctx APop;
 	(match Class.superclass clctx with
 	| None -> ()
 	| Some csuper ->
-		let k = gen_full_path() in
-		getvar ctx k;
+		push ctx [VReg 0];
 		let k = generate_access ctx (EStatic (Class.path csuper),null_pos) in 
 		getvar ctx k;
 		write ctx AExtends);
+	let getters = Hashtbl.create 0 in
 	List.iter (fun f ->
 		match f.fexpr with
 		| None -> ()
 		| Some _ ->
-			let k = gen_full_path() in
-			getvar ctx k;
-			if f.fstatic = IsMember then begin
-				push ctx [VStr "prototype"];
-				getvar ctx VarObj;
-			end;
-			push ctx [VStr f.fname];
+			push ctx [VReg (if f.fstatic = IsMember then 1 else 0)];
+			let name = (match f.fgetter with
+				| Normal -> f.fname
+				| Getter -> 
+					Hashtbl.add getters (f.fname,Getter) ();
+					"__get__" ^ f.fname
+				| Setter -> 
+					Hashtbl.add getters (f.fname,Setter) ();
+					"__set__" ^ f.fname)
+			in
+			push ctx [VStr name];
 			generate_function ctx f;
 			setvar ctx VarObj;
 	) (Class.methods clctx);
+	let dones = Hashtbl.create 0 in
+	Hashtbl.iter (fun (name,get) _ ->
+		if Hashtbl.mem dones (name,get) then
+			()
+		else
+		let getter = (get = Getter || Hashtbl.mem getters (name,Getter)) in
+		let setter = (get = Setter || Hashtbl.mem getters (name,Setter)) in
+		Hashtbl.add dones (name,Getter) ();
+		Hashtbl.add dones (name,Setter) ();
+		if setter then begin
+			push ctx [VReg 1; VStr ("__set__" ^ name)];
+			getvar ctx VarObj;
+		end else
+			push ctx [VNull];
+		if getter then begin
+			push ctx [VReg 1; VStr ("__get__" ^ name)];
+			getvar ctx VarObj;
+		end else
+			push ctx [VNull];
+		push ctx [VStr name; VInt 3];
+		push ctx [VReg 1; VStr "addProperty"];
+		call ctx VarObj 3
+	) getters;
 	List.iter (fun cintf ->
 		getvar ctx (generate_access ctx (EStatic (Class.path cintf),null_pos));
 	) (Class.interfaces clctx);
 	let nintf = List.length (Class.interfaces clctx) in
 	if nintf > 0 then begin
-		push ctx [VInt nintf];
-		getvar ctx (gen_full_path());
+		push ctx [VInt nintf; VReg 0];
 		write ctx AImplements;
 		ctx.stack_size <- ctx.stack_size - nintf;
 	end;
+	push ctx [VInt 1; VNull; VReg 1; VInt 3; VStr "ASSetPropFlags"];
+	call ctx VarStr 3;
 	List.iter (fun (name,v) ->
-		let k = gen_full_path() in
-		getvar ctx k;
-		push ctx [VStr name];
+		push ctx [VReg 0; VStr name];
 		generate_val ctx v;
 		setvar ctx VarObj;
 	) (Class.statics clctx);
