@@ -1030,9 +1030,14 @@ let generate_class_code ctx clctx =
 	generate_super_bindings ctx
 
 let to_utf8 str =
-	let b = UTF8.Buf.create 0 in
-	String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
-	UTF8.Buf.contents b
+	try
+		UTF8.validate str;
+		str;
+	with
+		UTF8.Malformed_code -> 
+			let b = UTF8.Buf.create 0 in
+			String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
+			UTF8.Buf.contents b
 
 let keep = ref false
 let frame = ref 1
