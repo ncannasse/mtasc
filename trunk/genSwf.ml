@@ -962,7 +962,11 @@ let to_utf8 str =
 	String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
 	UTF8.Buf.contents b
 
-let generate file ~compress ~keep exprs =
+let keep = ref false
+let frame = ref 1
+let header = ref None
+
+let generate file ~compress exprs =
 	let file , linkage =
 		(try
 			let f,l = String.split file "@" in
@@ -999,26 +1003,41 @@ let generate file ~compress ~keep exprs =
 	let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
 	DynArray.set ctx.ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));	
 	
-	let ch = IO.input_channel (open_in_bin file) in
-	let header, data = Swf.parse ch in
-	IO.close_in ch;
-
-	let ch = IO.output_channel (open_out_bin file) in
 	let tag d = {
 		tid = 0;
 		textended = false;
 		tdata = d;
 	} in
+	let header , data = (match !header with
+		| None ->
+			let ch = IO.input_channel (open_in_bin file) in
+			let header, data = Swf.parse ch in
+			IO.close_in ch;
+			header , data
+		| Some h ->
+		h , [tag (TSetBgColor { cr = 0xFF; cg = 0xFF; cb = 0xFF }); tag TShowFrame])
+	in
+	let ch = IO.output_channel (open_out_bin file) in
+	let found = ref false in
+	let curf = ref !frame in
 	let rec loop = function
-		| [] -> assert false
-		| ({ tdata = TShowFrame } :: l as all) -> 
-			let clip_id = 0xFFFF in
-			tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [tag TShowFrame] }) ::
-			tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.MTASC" }]) ::
-			tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
-			all
+		| [] ->
+			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
+			[]
+		| ({ tdata = TShowFrame } as x) :: l ->
+			if !found || !curf > 1 then begin
+				curf := !curf - 1;
+				x :: loop l
+			end else begin
+				found := true;
+				let clip_id = 0xFFFF in
+				tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [] }) ::
+				tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.MTASC" }]) ::
+				tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
+				x :: loop l
+			end
 		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
-			(not keep || e = "__Packages.MTASC") &&
+			(not !keep || e = "__Packages.MTASC") &&
 			String.length e > 11 &&
 			String.sub e 0 11 = "__Packages." -> loop l
 		| x :: l ->
@@ -1027,16 +1046,40 @@ let generate file ~compress ~keep exprs =
 	Swf.write ch (header,loop data);
 	IO.close_out ch
 
+let make_header s =
+	let sl = String.nsplit s ":" in
+	try
+		match sl with
+		| [w;h;fps] ->
+			{
+				h_version = 7;
+				h_size = {
+					rect_nbits = 15;
+					left = 0;
+					top = 0;
+					right = int_of_string w * 20;
+					bottom = int_of_string h * 20;
+				};
+				h_frame_count = 1;
+				h_fps = to_float16 (float_of_string fps);
+				h_compressed = true;
+			}
+		| _ ->
+			raise Exit
+	with
+		_ -> raise (Arg.Bad "Invalid header format");
+
 ;;
 generate_function_ref := generate_function;
 let swf = ref None in
-let keep = ref false in
 Plugin.add [
 	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
 	("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
+	("-frame",Arg.Int (fun i -> if i <= 0 then raise (Arg.Bad "Invalid frame"); frame := i),"<frame> : export into target frame (must exist in the swf)");
+	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
 ]
 (fun t ->
 	match !swf with 
 	| None -> () 
-	| Some f -> generate f ~keep:!keep ~compress:true (Typer.exprs t)
+	| Some f -> generate f ~compress:true (Typer.exprs t)
 );
