@@ -130,7 +130,7 @@ and parse_class_field (stat,pub) interf = parser
 
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
-	| [< '(Kwd For,p); '(POpen,_); c = parse_expr; e = parse_for p c >] -> e
+	| [< '(Kwd For,p); '(POpen,_); c = parse_expr_opt; e = parse_for p c >] -> e
 	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr_opt; e2 , p2 = parse_else (pos e) >] -> EIf (cond,e,e2), punion p p2
 	| [< '(Kwd Return,p); v , p2 = parse_eval_option p; >] -> EReturn v , punion p p2
 	| [< '(Kwd Break,p); >] -> EBreak , p
@@ -176,7 +176,7 @@ and parse_eval_next e = parser
 	| [< '(Const (Ident "and"),_); e2 = parse_eval; >] -> make_binop OpBoolAnd e e2
 	| [< '(Dot,_); '(Const (Ident field),p2); e = parse_eval_next (EField (e,field), punion (pos e) p2) >] -> e
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
-	| [< '(Unop op,p2) when is_postfix op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
+	| [< '(Unop op,p2) when is_postfix e op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
 	| [< '(Const (Ident "instanceof"),p); v = parse_eval; s >] ->
 		let iof v = ECall ((EConst (Ident "instanceof"), p),[e;v]) , punion (pos e) (pos v) in
@@ -241,11 +241,11 @@ and parse_expr_opt = parser
 
 and parse_for p c = parser
 	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,e) , punion p p2
-	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr >] -> EFor(c :: cl,l1,l2,e) , punion p p2
+	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr_opt >] -> EFor(c :: cl,l1,l2,e) , punion p p2
 
 and parse_for_conds = parser
 	| [< '(Sep,_); e = parse_expr; l = parse_for_conds >] -> e :: l
-	| [< '(Next,_) >] -> []
+	| [< >] -> []
 
 and parse_args = parser
 	| [< '(Const (Ident name),_); t = parse_type_option; al , p = parse_args >] -> (name , t) :: al , p
