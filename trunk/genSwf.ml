@@ -955,11 +955,11 @@ let generate_class_code ctx clctx =
 	push ctx [VInt 1; VNull; VReg 1; VInt 3; VStr "ASSetPropFlags"];
 	call ctx VarStr 3;
 	write ctx APop;
-	List.iter (fun (name,v) ->
-		push ctx [VReg 0; VStr name];
+	List.iter (fun (name,stat,v) ->
+		push ctx [VReg (if stat = IsMember then 1 else 0); VStr name];
 		generate_val ctx v;
 		setvar ctx VarObj;
-	) (Class.statics clctx);
+	) (Class.initvars clctx);
 	generate_super_bindings ctx
 
 let to_utf8 str =
@@ -1006,8 +1006,7 @@ let generate file ~compress exprs =
 	) exprs;
 	let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) ctx.idents [] in
 	let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
-	DynArray.set ctx.ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));	
-	
+	DynArray.set ctx.ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));
 	let tag d = {
 		tid = 0;
 		textended = false;
