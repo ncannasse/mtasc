@@ -1,8 +1,3 @@
-//****************************************************************************
-// ActionScript Standard Library
-// TextField.StyleSheet object
-//****************************************************************************
-
 intrinsic class StyleSheet
 {
 	function getStyle(name:String):Object;

@@ -7,7 +7,7 @@ intrinsic class XML extends XMLNode
 	var status:Number;
 	var xmlDecl:String;
 	
-	function XML(text:String);
+	function XML(text:String) : Void;
 	function createElement(name:String):XMLNode;
 	function createTextNode(value:String):XMLNode;
 	function parseXML(value:String):Void;

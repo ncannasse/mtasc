@@ -84,9 +84,13 @@ try
 	let usage = "Motion-Twin ActionScript2 Compiler v1.0 - (c)2004 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
 	let base_path = normalize_path (Filename.dirname (OSDep.exe_name())) in
 	let files = ref [] in
+	let input = ref None in
+	let output = ref None in
 	let time = Sys.time() in
-	Plugin.class_path := [base_path;""];
+	Plugin.class_path := [base_path ^ "std/"; base_path;""];
 	let args_spec = [
+		("-i",Arg.String (fun f -> input := Some f),"<file> : input SWF");
+		("-o",Arg.String (fun f -> output := Some f), "<file> : generate into target SWF");
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
@@ -95,11 +99,14 @@ try
 	if !files = [] then begin
 		Arg.usage args_spec usage
 	end else begin
+		if !Plugin.verbose then print_endline ("Classpath : " ^ (String.concat ";" !Plugin.class_path));
 		let typer = Typer.create !Plugin.class_path in
 		List.iter (fun file ->			
 			let path = class_name file in
 			ignore(Typer.load_class typer path Expr.null_pos);
 		) (List.rev !files);
+		Typer.finalize typer;
+		(match !output with None -> () | Some f -> GenSwf.generate !input f true (Typer.exprs typer));
 		if !Plugin.verbose then print_endline ("Time spent : " ^ string_of_float (Sys.time() -. time));
 		List.iter (fun f -> f typer) !Plugin.calls;
 	end;

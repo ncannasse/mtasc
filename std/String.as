@@ -1,6 +1,6 @@
 intrinsic class String
 {
-	function String(string:String);
+	function String(string:String) : Void;
 	function toUpperCase():String;
 	function toLowerCase():String;
 	function charAt(index:Number):String;

@@ -176,6 +176,9 @@ let base_class_name = snd
 
 let null_pos = { pfile = "<null>"; pmin = -1; pmax = -1 }
 
+let set_eval (e : eval) (v : eval_def) =
+	Obj.set_field (Obj.repr e) 0 (Obj.repr v)
+
 let punion p p2 =
 	{
 		pfile = p.pfile;
