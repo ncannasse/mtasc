@@ -875,6 +875,7 @@ let load_file ctx file =
 			raise exc
 	) in
 	close_in ch;
+	List.iter check_sign expr;
 	Hashtbl.add ctx.files file expr;
 	verbose_msg ("Parsed " ^ file);
 	expr
