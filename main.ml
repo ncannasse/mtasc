@@ -17,6 +17,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *)
 open Printf
+open ExtString
 
 type p_style =
 	| StyleJava
@@ -87,6 +88,21 @@ let rec parse_class_path base_path path =
 			Not_found ->
 				relative (normalize_path path) []
 
+let read_package path =
+	let npath = normalize_path path in
+	let rec loop = function
+		| [] -> []
+		| cpath :: l ->
+			let filepath = normalize_path (cpath ^ path) in
+			match Array.to_list (Sys.readdir filepath) with
+			| [] -> loop l
+			| files ->
+				match List.filter (fun f -> String.ends_with (String.lowercase f) ".as") files with
+				| [] -> loop l
+				| files -> List.map (fun f -> npath ^ f) files @ loop l
+	in
+	loop !Plugin.class_path
+
 let report (msg,p) etype printer =
 	let error_printer file line =
 		match !print_style with
@@ -96,7 +112,6 @@ let report (msg,p) etype printer =
 	let epos = Lexer.get_error_pos error_printer p in
 	prerr_endline (sprintf "%s : %s %s" epos etype (printer msg));
 	exit 1
-
 ;;
 try	
 	let usage = "Motion-Twin ActionScript2 Compiler BETA-3 - (c)2004 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
@@ -105,6 +120,7 @@ try
 	let time = Sys.time() in
 	Plugin.class_path := [base_path;""];
 	let args_spec = [
+		("-pack",Arg.String (fun path -> files := read_package path @ !files),"<path> : compile all files in target package");
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
