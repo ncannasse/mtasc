@@ -83,7 +83,7 @@ let stack_delta = function
 	| AGetURL2 _ -> -1
 	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
-	| AEnum2 -> -1
+	| AEnum2 | ATrace -> -1
 	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf | ATargetPath -> 0
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
@@ -999,7 +999,7 @@ let generate file ~compress exprs =
 	} in
 	DynArray.add ctx.ops (AStringPool []);
 	push ctx [VStr "Compiled with MTASC : http://tech.motion-twin.com"];
-	write ctx APop;
+	write ctx ATrace;
 	Class.generate (fun clctx ->
 		ctx.current <- clctx;
 		if not (Class.intrinsic clctx) then generate_class_code ctx clctx
