@@ -646,7 +646,7 @@ let type_function ?(lambda=false) ctx clctx f p =
 		if not lambda then verbose_msg ("Typing " ^ s_type_path clctx.path ^ "." ^ f.fname);
 		let ctx = {
 			ctx with
-				current = clctx;
+				current = if lambda then { clctx with imports = ctx.current.imports } else clctx;
 				locals = if lambda then ctx.locals else Hashtbl.create 0;
 				in_static = (f.fstatic = IsStatic);
 				in_constructor = (f.fstatic = IsMember && f.fname = clctx.name);
