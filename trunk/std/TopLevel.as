@@ -34,7 +34,7 @@ intrinsic class TopLevel {
 	private static function typeof( o ) : String;
 	private static function instanceof( o : Object, cl : Object ) : Boolean;
 	private static function targetPath( o : MovieClip ) : String;
-	private static var arguments : Array;
+	private static var arguments : FunctionArguments;
 	private static function throw(x) : Void;
 	private static function fscommand(x,y) : Void;
 
