@@ -611,6 +611,16 @@ and generate_val ?(retval=true) ctx (v,p) =
 		generate_constant ctx p c
 	| EParenthesis v ->
 		generate_val ctx v
+	| ECast ((EStatic ([],"String"),_),v) ->
+		generate_val ctx v;
+		write ctx AToString
+	| ECast ((EStatic ([],"Number"),_),v) ->
+		generate_val ctx v;
+		write ctx AToNumber;
+	| ECast ((EStatic ([],"Boolean"),_),v) ->
+		generate_val ctx v;
+		write ctx ANot;
+		write ctx ANot;
 	| ECast (v1,v2) ->
 		generate_val ctx v1;
 		generate_val ctx v2;
