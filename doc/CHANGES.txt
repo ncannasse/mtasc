@@ -3,6 +3,7 @@
 	fixed member variable declaration with init value
 	fixed multivariable ops
 	added delete call without parenthesis
+	fixed numbers starting with '.'
 
 2004-11-09 : beta4
 	support for "arguments"
