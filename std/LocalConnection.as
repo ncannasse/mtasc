@@ -1,4 +1,4 @@
-intrinsic class LocalConnection
+dynamic intrinsic class LocalConnection
 {
 	function connect(connectionName:String):Boolean;
 	function send(connectionName:String, methodName:String, args:Object):Boolean;
