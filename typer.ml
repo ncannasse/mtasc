@@ -400,17 +400,6 @@ let rec resolve_package ctx v (p : string list) pos =
 	| cname :: fields ->
 		let rec access p = function
 			| [] -> EStatic p
-			| [x] ->
-				let rec loop cl =
-					if Hashtbl.mem cl.statics x then
-						cl.path
-					else if cl.super == cl then
-						p
-					else
-						loop cl.super
-				in
-				let p = loop (!load_class_ref ctx p pos) in
-				EField (((EStatic p),pos),x)
 			| x :: l -> EField ((access p l , pos), x)
 		in
 		let rec search_package p =
@@ -529,9 +518,24 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		type_binop ctx op v1 v2 p
 	| EField (v,f) ->
 		let t = type_val ~in_field:true ctx v in
-		(match type_field ctx t f p with
+		let t = (match type_field ctx t f p with
 		| Package pk when not in_field -> resolve_package ctx e pk p
-		| t -> t)
+		| t -> t) in
+		(match v with
+		| EStatic p , pos -> 
+			let rec loop cl =
+				if Hashtbl.mem cl.statics f then
+					cl.path
+				else if cl.super == cl then
+					p
+				else
+					loop cl.super
+			in
+			let p = loop (!load_class_ref ctx p pos) in
+			set_eval v (EStatic p)
+		| _ -> ()
+		);
+		t
 	| EStatic cpath ->
 		let c = resolve_path ctx cpath p in
 		set_eval e (EStatic c.path);

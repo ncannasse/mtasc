@@ -766,8 +766,15 @@ let rec generate_expr ctx (e,p) =
 			error (pos decl));
 		generate_expr ctx e;
 		do_jmp ctx start_pos;
-		jump_end();
+		let has_breaks = (ctx.breaks <> []) in
 		generate_breaks ctx old_breaks;
+		if has_breaks then begin			
+			push ctx [VNull];
+			write ctx AEqual;
+			write ctx ANot;
+			write ctx (ACondJump (-4));
+		end;
+		jump_end();
 		ctx.continue_pos <- old_continue;
 		block_end()
 	| EIf (v,e,eelse) ->
