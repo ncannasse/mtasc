@@ -1,3 +1,6 @@
+2005-02-?? : 1.01
+	fixed doaction/showframe inversion
+
 2005-01-26 : 1.0
 	fixed super field accesses
 	fixed -separate with -main issues

@@ -1169,7 +1169,7 @@ let generate file ~compress exprs =
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
 			List.rev acc
 		| ({ tdata = TDoAction _ } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
-			insert loop acc [x1;x2] l
+			insert loop acc [x2;x1] l
 		| ({ tdata = TShowFrame } as x) :: l ->
 			insert loop acc [x] l
 		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
