@@ -23,7 +23,7 @@ dynamic intrinsic class TextField
 	var _url:String;
 	var _parent:MovieClip;
 
-	var autoSize:String;
+	var autoSize:Object;
 	var background:Boolean;
 	var backgroundColor:Number;
 	var border:Boolean;
