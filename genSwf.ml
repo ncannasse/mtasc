@@ -204,8 +204,8 @@ let error p =
 let do_jmp ctx pos =
 	write ctx (AJump (pos - (ctx.code_pos + 1)))
 
-let func ctx args constructor =
-	let default_flags = [ThisRegister;ArgumentsNoVar] in
+let func ctx args constructor arguments =
+	let default_flags = ThisRegister :: (if arguments then [] else [ArgumentsNoVar]) in
 	let f = {
 		f2_name = "";
 		f2_args = args;
@@ -394,7 +394,7 @@ let generate_ident ctx s p =
 	| "false" ->
 		write ctx (APush [PBool false]);
 		VarReg (-1)
-	| "_global" | "_root" ->
+	| "_global" | "_root" | "arguments" ->
 		push ctx [VStr s];
 		VarStr
 	| "super" -> 
@@ -432,7 +432,7 @@ let generate_breaks ctx olds =
 let generate_function_ref = ref (fun _ _ -> assert false)
 
 let rec generate_access ?(forcall=false) ctx (v,p) =
-	match v with
+	match v with		
 	| EConst (Ident "super") ->
 		(* for superconstructor *)
 		if not forcall then error p;
@@ -848,7 +848,7 @@ let generate_function ?(constructor=false) ctx f =
 			Hashtbl.add ctx.locals aname { reg = r; sp = ctx.stack };
 			r , aname
 		) f.fargs in		
-		let fdone = func ctx args reg_super in
+		let fdone = func ctx args reg_super (used_in_block true "arguments" fexpr) in
 		generate_expr ctx fexpr;
 		if f.fgetter = Setter then begin
 			push ctx [VInt 0;VThis;VStr ("__get__"^f.fname)];
@@ -883,7 +883,7 @@ let generate_class_code ctx clctx =
 	push ctx [VStr cname];
 	(match Class.constructor clctx with
 	| None -> 
-		let fdone = func ctx [] true in
+		let fdone = func ctx [] true false in
 		fdone 3;
 	| Some f ->
 		generate_function ~constructor:true ctx f);
