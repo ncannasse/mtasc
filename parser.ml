@@ -38,10 +38,11 @@ let priority = function
 	| OpAssign | OpAssignOp _ -> -3
 	| OpBoolAnd | OpBoolOr -> -2
 	| OpEq | OpNotEq | OpGt | OpLt | OpGte | OpLte | OpPhysEq | OpPhysNotEq -> -1
-	| OpAdd | OpSub -> 0
-	| OpMult | OpDiv -> 1
-	| OpOr | OpAnd | OpXor -> 2
-	| OpShl | OpShr | OpMod | OpUShr -> 3
+	| OpShl | OpShr | OpUShr -> 0
+	| OpAdd | OpSub -> 1
+	| OpMult | OpDiv -> 2
+	| OpOr | OpAnd | OpXor -> 3
+	| OpMod -> 4
 
 let is_not_assign = function
 	| OpAssign | OpAssignOp _ -> false

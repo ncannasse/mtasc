@@ -5,6 +5,7 @@
 	added check function for values without side effects
 	relaxed array access typing
 	fixed 820 size limit for -header
+	changed bitshifts operator priority
 	
 2005-03-10 : 1.02
 	test if class already exists (multiple swf statics init)
