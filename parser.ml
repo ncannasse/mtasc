@@ -50,7 +50,7 @@ let rec make_binop op e ((v,p2) as e2) =
 	| EBinop (_op,_e,_e2) when priority _op <= priority op && (is_not_assign _op || is_not_assign op) ->
 		let _e = make_binop op e _e in
 		EBinop (_op,_e,_e2) , punion (pos _e) (pos _e2)
-	| EQuestion (_e,_e1,_e2) ->
+	| EQuestion (_e,_e1,_e2) when is_not_assign op ->
 		EQuestion ( (EBinop(op,e,_e) , punion (pos e) (pos _e)) , _e1 , _e2) , punion (pos e) (pos _e2)
 	| _ ->
 		EBinop (op,e,e2) , punion (pos e) (pos e2)
@@ -83,6 +83,7 @@ and parse_signature = parser
 	| [< flags = parse_class_flags; '(Kwd Class,p); path = parse_class_path; herits = parse_herits; '(BrOpen,op); s >] -> 
 		let el, p2 = parse_class (List.exists ((=) HIntrinsic) flags) s in
 		EClass (path, flags @ herits, (EBlock el, punion op p2)) , punion p p2
+	| [< _ = parse_include; s = parse_signature >] -> s
 
 and parse_herits = parser
 	| [< '(Kwd Extends,_); p = parse_class_path; l = parse_herits >] -> HExtends p :: l
@@ -98,6 +99,7 @@ and parse_class interf = parser
 	| [< '(BrClose,p) >] -> [] , p
 	| [< '(Next,_); n = parse_class interf >] -> n
 	| [< '(BkOpen,_); _ = parse_metadata; i = parse_class interf >] -> i
+	| [< _ = parse_include; s = parse_class interf >] -> s
 	| [< flags = parse_field_flags IsMember IsPublic; f = parse_class_field flags interf; fl , p = parse_class interf >] -> f :: fl , p
 
 and parse_field_flags stat pub = parser
@@ -131,6 +133,7 @@ and parse_expr = parser
 	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el , eo, p2 = parse_switch >] -> ESwitch (v,el,eo) , punion p1 p2
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (IsMember,IsPublic,vl), punion p1 p2
 	| [< e = parse_eval >] -> EVal e , pos e
+	| [< _ = parse_include; e = parse_expr >] -> e
 
 and parse_eval = parser
 	| [< '(Kwd Function,p1); '(POpen,_); args, _ = parse_args; t = parse_type_option; e = parse_expr;
@@ -151,6 +154,7 @@ and parse_eval = parser
 	| [< '(BkOpen,p1); el, p2 = parse_array; e = parse_eval_next (EArrayDecl el,punion p1 p2) >] -> e
 	| [< '(Unop op,p1) when is_prefix op; e = parse_eval >] -> make_unop op e p1
 	| [< '(Binop OpSub,p1); e = parse_eval >] -> make_unop Neg e p1
+	| [< _ = parse_include; e = parse_eval_next (EObjDecl [],null_pos) >] -> e
 
 and parse_eval_next e = parser
 	| [< '(BkOpen,_); e2 = parse_eval; '(BkClose,p2); e = parse_eval_next (EArray (e,e2) , punion (pos e) p2) >] -> e
@@ -276,6 +280,10 @@ and parse_getter name = parser
 		| "set" -> Setter
 		| _ -> raise Stream.Failure)
 	| [< >] -> name , Normal
+
+and parse_include = parser 
+	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String _),p2) >] ->
+		print_endline ("Warning : unsupported #include in " ^ p1.pfile)
 
 let parse code file =
 	let old = Lexer.save() in

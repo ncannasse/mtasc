@@ -1,3 +1,15 @@
+2004-11-XX : beta6
+	fixed stack overflow in parsing metadata
+	added missing intrinsic headers
+	allowed to have a method named "get" or "set"
+	warning instead of error on #include
+	allowing call object "Function"
+	relaxed array access to Array only
+	improved typing of classnames as Function
+	allowed Array[Boolean]
+	fixed parsing of  x = y ? z : w;
+	
+
 2004-11-17 : beta5
 	fixed back the Export name to "MTASC" (causing problem with -keep)
 	fixed member variable declaration with init value

@@ -105,6 +105,7 @@ type token =
 	| Dot
 	| DblDot
 	| Question
+	| Sharp
 
 type unop_flag =
 	| Prefix
@@ -305,3 +306,5 @@ let s_token = function
 	| Dot -> "."
 	| DblDot -> ":"
 	| Question -> "?"
+	| Sharp -> "#"
+
