@@ -10,6 +10,9 @@
 	added -pack
 	enabled specifying AS2 classes for MC directly into Flash IDE.
 	fixed little inheritance problem in generated SWF
+	(hotfixes)
+	fixed multiple assignations
+	fixed swfLib linking for Linux
 	
 2004-11-03 : beta3
 	checks that implements an interface and extends a class
