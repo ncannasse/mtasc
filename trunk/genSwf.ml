@@ -67,7 +67,7 @@ let stack_delta = function
 	| AAdd | ADivide | ASubtract | AMultiply | AMod -> -1
 	| AAnd | AOr | AXor | AShl | AShr | AAsr -> -1
 	| ACompare | AGreater -> -1
-	| AEval | ANot | AJump _ | AToInt | AToString | ATry _ | ASwap -> 0
+	| AEval | ANot | AJump _ | AToInt | AToNumber | AToString | ATry _ | ASwap -> 0
 	| ACondJump _ -> -1
 	| AEqual | APhysEqual -> -1
 	| ANew -> -1 (** only if 0 params **)
