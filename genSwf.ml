@@ -1312,6 +1312,7 @@ let exclude_file f =
 ;;
 generate_function_ref := generate_function;
 SwfParser.init SwfZip.inflate SwfZip.deflate;
+Swf.warnings := false;
 let swf = ref None in
 Plugin.add [
 	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
