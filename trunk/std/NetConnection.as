@@ -1,4 +1,4 @@
-intrinsic class NetConnection
+dynamic intrinsic class NetConnection
 {
 	var isConnected : Boolean;
 	var uri : String;
