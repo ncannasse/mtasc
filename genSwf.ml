@@ -77,6 +77,7 @@ let stack_delta = function
 	| APop -> -1
 	| AFunction _ | AFunction2 _ -> 1	
 	| ADup -> 1
+	| AWith _ -> -1
 	| AObjGet -> -1
 	| AObjSet -> -3
 	| ALocalVar -> -1
@@ -273,6 +274,8 @@ let rec used_in_block curblock vname e =
 			vloop v1 || vloop v2
 		| EField (v,_) ->
 			vloop v
+		| EStatic (["__With"],v) ->
+			v = vname
 		| EStatic _ ->
 			false
 		| EParenthesis v ->
@@ -322,6 +325,8 @@ let rec used_in_block curblock vname e =
 			vloop v || List.exists (fun (v,e) -> vloop v || loop e) cases || (match eopt with None -> false | Some e -> loop e)
 		| ETry (e,cl,fopt) ->
 			loop e || List.exists (fun (n,_,e) -> vname = n || loop e) cl || (match fopt with None -> false | Some e -> loop e)
+		| EWith (v,e) ->
+			vloop v || loop e
 		| EReturn (Some v) ->
 			vloop v
 		| EVal v ->
@@ -416,7 +421,8 @@ let generate_ident ctx s p =
 			end else
 				VarReg l.reg
 		with Not_found ->
-			raise (Typer.Error (Typer.Custom ("Uncatched ident " ^ s),p))
+			push ctx [VStr s];
+			VarStr
 
 let unescape_chars s = 
 	let s = String.concat "\n" (String.nsplit s "\\n") in
@@ -455,6 +461,9 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 		generate_val ctx v;
 		push ctx [VStr s];
 		VarObj
+	| EStatic (["__With"],s) ->
+		push ctx [VStr s];
+		VarStr
 	| EStatic (p,s) ->
 		let k = generate_package ~fast:true ctx p in
 		push ctx [VStr s];
@@ -832,6 +841,13 @@ let rec generate_expr ctx (e,p) =
 		generate_breaks ctx old_breaks;
 		ctx.continue_pos <- old_continue;
 		jump_end()
+	| EWith (v,e) ->
+		generate_val ctx v;
+		write ctx (AWith 0);
+		let start = ctx.code_pos in
+		generate_expr ctx e;
+		let delta = ctx.code_pos - start in
+		DynArray.set ctx.ops (start - 1) (AWith delta);
 	| EBreak ->
 		ctx.breaks <- jmp ctx :: ctx.breaks
 	| EContinue ->
