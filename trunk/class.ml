@@ -207,13 +207,14 @@ and generate_class h gen clctx =
 	| NotYet ->
 		let generate_herit = function
 			| HIntrinsic | HDynamic -> ()
-			| HExtends path ->
+			| HExtends path when not clctx.is_interface ->
 				(try
-					let hctx = Hashtbl.find h path in
+					let hctx = Hashtbl.find h path in					
 					clctx.superclass <- Some hctx;
 					generate_class h gen hctx
 				with
 					Not_found -> assert false)
+			| HExtends path 
 			| HImplements path ->
 				try
 					let hctx = Hashtbl.find h path in
