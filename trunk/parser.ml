@@ -147,6 +147,7 @@ and parse_eval = parser
 			fexpr = Some e;
 		} , punion p1 (pos e)) >] -> v
 	| [< '(Const (Ident "delete"),p1); e = parse_delete (EConst (Ident "delete"),p1) >] -> e
+	| [< '(Const (Ident "typeof"),p1); e = parse_delete (EConst (Ident "typeof"),p1) >] -> e
 	| [< '(Const (Ident "new"),p1); p = parse_class_path; e = parse_new (EStatic p,p1) p1 >] -> e
 	| [< '(Const c,p); e = parse_eval_next (EConst c,p)  >] -> e
 	| [< '(POpen,p1); e = parse_eval; '(PClose,p2); e = parse_eval_next (EParenthesis e , punion p1 p2) >] -> e
