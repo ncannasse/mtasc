@@ -3,6 +3,7 @@
 	-frame now works with -header
 	fixed "class Number not found" when no std
 	relaxed restriction on input file names
+	added getURL with one argument only
 	
 2005-02-21 : 1.01
 	fixed doaction/showframe inversion

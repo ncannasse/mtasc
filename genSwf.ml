@@ -529,6 +529,10 @@ and generate_binop retval ctx op v1 v2 =
 
 and generate_geturl ctx c vars p =
 	let k = match vars with
+		| [v] when c = "getURL" ->
+			generate_val ctx v;
+			push ctx [VStr "_self"];
+			0
 		| v1 :: v2 :: l -> 
 			generate_val ctx v1;
 			generate_val ctx v2;
