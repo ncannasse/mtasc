@@ -47,9 +47,6 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath="checker.ml">
-		</File>
-		<File
 			RelativePath="class.ml">
 		</File>
 		<File

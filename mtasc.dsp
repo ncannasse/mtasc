@@ -111,10 +111,6 @@ SOURCE=.\main.ml
 # End Group
 # Begin Source File
 
-SOURCE=.\checker.ml
-# End Source File
-# Begin Source File
-
 SOURCE=.\class.ml
 # End Source File
 # Begin Source File
