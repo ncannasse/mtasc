@@ -134,6 +134,7 @@ and parse_eval_next e = parser
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
 	| [< '(Unop op,p2) when is_postfix op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
+	| [< '(Const (Ident "instanceof"),p); v = parse_eval; e = parse_eval_next (ECall ((EConst (Ident "instanceof"),p),[e;v]),punion (pos e) (pos v)) >] -> e
 	| [< >] -> e
 
 and parse_field_access e = parser
