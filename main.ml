@@ -109,8 +109,8 @@ try
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 	] @ !Plugin.options in
-	Plugin.class_path := (base_path ^ "std/") :: !Plugin.class_path;
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
+	Plugin.class_path := (base_path ^ "std/") :: !Plugin.class_path;
 	if !files = [] then begin
 		Arg.usage args_spec usage
 	end else begin
