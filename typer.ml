@@ -85,6 +85,7 @@ exception Error of error_msg * pos
 exception File_not_found of string
 
 let verbose = ref false
+let strict_mode = ref false
 
 let error msg p = raise (Error (msg,p))
 
@@ -168,7 +169,7 @@ let rec unify ta tb p =
 		error (Cannot_unify (ta,tb)) p
 
 let t_opt ctx p = function
-	| None -> Dyn
+	| None -> if !strict_mode then error (Custom "Type required in strict mode") p; Dyn
 	| Some ([],"Void") -> Void
 	| Some t -> Class (resolve_path ctx t p)
 
