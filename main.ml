@@ -116,7 +116,7 @@ let report (msg,p) etype printer =
 	exit 1
 ;;
 try	
-	let usage = "Motion-Twin ActionScript2 Compiler 1.0 - (c)2004-2005 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
+	let usage = "Motion-Twin ActionScript2 Compiler 1.01 - (c)2004-2005 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
 	let base_path = normalize_path (try Extc.executable_path() with _ -> ".") in
 	let files = ref [] in
 	let time = Sys.time() in
