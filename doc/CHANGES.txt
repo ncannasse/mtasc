@@ -1,3 +1,6 @@
+2004-11-XX : beta5 / 1.0 ?
+	fixed back the Export name to "MTASC" (causing problem with -keep)
+
 2004-11-09 : beta4
 	support for "arguments"
 	fixed bug when a class reference itself : lookup was member constructor
