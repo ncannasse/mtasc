@@ -43,6 +43,7 @@ and class_context = {
 	path : type_path;
 	name : string;
 	file : string;
+	native : bool;
 	interface : bool;
 	dynamic : bool;
 	imports : imports;
@@ -183,7 +184,7 @@ let rec unify ta tb p =
 		error (Cannot_unify (ta,tb)) p
 
 let t_opt ctx p = function
-	| None -> if !strict_mode then error (Custom "Type required in strict mode") p; Dyn
+	| None -> if !strict_mode && not ctx.current.native then error (Custom "Type required in strict mode") p; Dyn
 	| Some ([],"Void") -> Void
 	| Some t -> Class (resolve_path ctx t p)
 
@@ -687,12 +688,13 @@ let rec type_class_fields ctx clctx (e,p) =
 	| _ ->
 		assert false
 
-let type_class ctx cpath herits e imports file interf s =
+let type_class ctx cpath herits e imports file interf native s =
 	let old = ctx.current in
 	let rec clctx = {
 		path = cpath;
 		name = snd cpath;
 		file = file;
+		native = native;
 		interface = interf;
 		dynamic = List.exists ((=) HDynamic) herits;
 		fields = Hashtbl.create 0;
@@ -750,11 +752,11 @@ let type_file ctx req_path file el pos =
 		| EClass (t,hl,e) ->
 			if t <> req_path then error t (snd e);
 			if !clctx <> None then assert false;
-			clctx := Some (type_class ctx t hl e imports file false sign)
+			clctx := Some (type_class ctx t hl e imports file false (List.exists ((=) HIntrinsic) hl) sign)
 		| EInterface (t,hl,e) ->
 			if t <> req_path then error t (snd e);
 			if !clctx <> None then assert false;
-			clctx := Some (type_class ctx t hl e imports file true sign)
+			clctx := Some (type_class ctx t hl e imports file true false sign)
 		| EImport (p,Some name) ->
 			Hashtbl.add imports.paths name (p,name)
 		| EImport (pk,None) ->
