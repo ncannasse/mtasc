@@ -53,7 +53,7 @@ dynamic intrinsic class TextField
 	var variable:String;
 	var wordWrap:Boolean;
 
-	var styleSheet:StyleSheet;
+	var styleSheet:TextField.StyleSheet;
 
 	function replaceText(beginIndex:Number,endIndex:Number,newText:String):Void;
 	function replaceSel(newText:String):Void;

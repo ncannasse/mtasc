@@ -119,6 +119,10 @@ let is_number ctx = function
 	| Class c when c == (match ctx.inumber with Class c2 -> c2 | _ -> assert false) -> true
 	| _ -> false
 
+let is_boolean ctx = function
+	| Class c when c == (match ctx.ibool with Class c2 -> c2 | _ -> assert false) -> true
+	| _ -> false
+
 let is_string ctx = function
 	| Class c when c == (match ctx.istring with Class c2 -> c2 | _ -> assert false) -> true
 	| _ -> false
@@ -138,12 +142,20 @@ let resolve_path ctx p pos =
 		in
 		loop ctx.current.imports.wildcards
 
+let rec is_function cl =
+	match cl.path with
+	| ([],"Function") -> true
+	| _ ->
+		if cl.super == cl then
+			false 
+		else
+			is_function cl.super
+
 (* check that ta >= tb *)
 let rec unify ta tb p =
 	match ta , tb with
 	| Dyn , x | x , Dyn when x <> Void -> ()
 	| Void , Void -> ()
-	| Static c , Function _ -> ()
 	| Function (args1,r1) , Function (args2,r2) ->
 		let rec loop a1 a2 = 
 			match a1 , a2 with
@@ -162,9 +174,11 @@ let rec unify ta tb p =
 				loop cl1.super
 		in
 		loop cl1
-	| Static _, Class c when c.super == c -> ()
-	| Function _ , Class { path = ([],"Function") }
-	| Class { path = ([],"Function") } , Function _ -> ()
+	| Function _, Class c
+	| Static _, Class c when c.super == c -> () (* unify with Object *)
+	| Static _ , Class cl
+	| Class cl, Static _
+	| Function _ , Class cl	when is_function cl -> ()
 	| _ , _ ->
 		error (Cannot_unify (ta,tb)) p
 
@@ -484,8 +498,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		(match t2 with
 		| Dyn -> ()
 		| _ ->
-			if not (is_number ctx t2) && not(is_string ctx t2) then error (Cannot_unify (t2,ctx.inumber)) (pos v2));
-		if not (is_dynamic t) then error (Cannot_unify (t,Class (t_array ctx))) (pos v1);
+			if not (is_number ctx t2) && not(is_string ctx t2) && not(is_boolean ctx t2) then error (Cannot_unify (t2,ctx.inumber)) (pos v2));
 		Dyn
 	| EBinop (op,v1,v2) ->
 		type_binop ctx op v1 v2 p
@@ -528,6 +541,9 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 			loop args fargs;
 			ret
 		| Dyn ->
+			List.iter (fun v -> no_void (type_val ctx v) (pos v)) args;
+			Dyn
+		| Class cl when is_function cl ->
 			List.iter (fun v -> no_void (type_val ctx v) (pos v)) args;
 			Dyn
 		| Static c when List.length args = 1 ->
@@ -625,10 +641,7 @@ let type_function ?(lambda=false) ctx clctx f p =
 	match f.fexpr with
 	| None -> assert false
 	| Some e ->
-		if not lambda && !verbose then begin
-			print_endline ("Typing " ^ s_type_path clctx.path ^ "." ^ f.fname);
-			flush stdout;
-		end;
+		if not lambda then verbose_msg ("Typing " ^ s_type_path clctx.path ^ "." ^ f.fname);
 		let ctx = {
 			ctx with
 				current = clctx;

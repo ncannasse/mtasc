@@ -177,6 +177,7 @@ rule token = parse
 	| "(" { mk lexbuf POpen }
 	| ")" { mk lexbuf PClose }
 	| "?" { mk lexbuf Question }
+	| "#" { mk lexbuf Sharp }
 	| "/*" {
 			reset();
 			let pmin = lexeme_start lexbuf in
