@@ -1,0 +1,29 @@
+This document is dedicated to people who want to compile MTASC from sources.
+
+Quick Guide :
+-------------
+
+- install OCaml (at http://caml.inria.fr ). 3.08 is recommanded (not tested under)
+- install CVS (http://www.cvshome.org)
+- download and compile ZLIB (http://www.zlib.org)
+- put the "install.ml" MTASC install script into a directory of your choice
+- configure ocaml and cvs so it can run from commandline
+- edit and *configure* install.ml (see below)
+- run the following command "ocaml install.ml" to run install script
+
+Configuration
+-------------
+
+install.ml is an install script that will download and compile sources.
+It needs some minimal configuration in order to work correctly.
+
+First you need to choose which of the two build you want to compile :
+- native : native is compiled for your processor, it will run a lot faster
+- bytecode : ocaml bytecode program, however it is not platform independant since it links some C code for ZLib bindings
+
+Then you need to configure the path where zlib.lib or zlib.a can be found.
+
+Problems :
+----------
+In case of problem please join the MTASC mailing list here :
+http://lists.motion-twin.com/mailman/listinfo/mtasc
