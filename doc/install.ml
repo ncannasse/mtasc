@@ -40,7 +40,7 @@ let command c =
 	if Sys.command c <> 0 then failwith ("Error while running " ^ c)
 
 let cvs root cmd =
-	command ("cvs -z3 -d" ^ root ^ "  " ^ cmd)
+	command ("cvs -z3 -d" ^ root ^ " " ^ cmd)
 
 let ocamlc file =
 	if bytecode then command ("ocamlc -c " ^ file);
@@ -53,7 +53,6 @@ let modules l ext =
 
 let sourceforge = ":pserver:anonymous:@cvs.sourceforge.net:/cvsroot/ocaml-lib" in
 let motiontwin = ":pserver:anonymous:@cvs.motion-twin.com:/cvsroot" in
-
 
 let download () =
 
@@ -79,7 +78,8 @@ let compile() =
 
 	(* EXTC *)
 	Sys.chdir "ocaml/extc";
-	command "ocamlc extc_stubs.c";
+	let c_opts = (if Sys.ocaml_version < "3.08" then " -ccopt -Dcaml_copy_string=copy_string " else " ") in
+	command ("ocamlc" ^ c_opts ^ "extc_stubs.c");
 
 	let options = "-cclib ../extc/extc_stubs" ^ obj_ext ^ " -cclib " ^ zlib ^ " extc.mli extc.ml" in
 	if bytecode then command ("ocamlc -a -o extc.cma " ^ options);
