@@ -152,7 +152,6 @@ with
 	| Lexer.Error (m,p) -> report (m,p) "syntax error" Lexer.error_msg
 	| Parser.Error (m,p) -> report (m,p) "parse error" Parser.error_msg
 	| Typer.Error (m,p) -> report (m,p) "type error" Typer.error_msg
-	| Checker.Error (m,p) -> report (m,p) "check error" Checker.error_msg
 	| Typer.File_not_found file ->
 		prerr_endline (sprintf "File not found %s" file);
 		exit 1	
