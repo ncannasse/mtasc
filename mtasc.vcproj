@@ -42,22 +42,6 @@
 	</References>
 	<Files>
 		<Filter
-			Name="swflib"
-			Filter="">
-			<File
-				RelativePath="..\swflib\actionScript.ml">
-			</File>
-			<File
-				RelativePath="..\swflib\swf.ml">
-			</File>
-			<File
-				RelativePath="..\swflib\swfParser.ml">
-			</File>
-			<File
-				RelativePath="..\swflib\swfZip.ml">
-			</File>
-		</Filter>
-		<Filter
 			Name="main"
 			Filter="">
 			<File
