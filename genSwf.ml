@@ -64,7 +64,7 @@ type push_style =
 let stack_delta = function
 	| APush l -> List.length l
 	| ASetReg _ -> 0
-	| AAdd | ADivide | ASubtract | AMultiply | AMod -> -1
+	| AAdd | ADivide | ASubtract | AMultiply | AMod | AStringAdd -> -1
 	| AAnd | AOr | AXor | AShl | AShr | AAsr -> -1
 	| ACompare | AGreater -> -1
 	| AEval | ANot | AJump _ | AToInt | AToNumber | AToString | ATry _ | ASwap -> 0
@@ -580,6 +580,18 @@ and generate_call ?(newcall=false) ctx v vl =
 	| EConst (Ident "targetPath") , [v] ->
 		generate_val ctx v;
 		write ctx ATargetPath
+	| EConst (Ident "fscommand") , [v] ->
+		push ctx [VStr "FSCommand:"];
+		generate_val ctx v;
+		write ctx AStringAdd;
+		push ctx [VStr ""];
+		write ctx (AGetURL2 0)
+	| EConst (Ident "fscommand") , [v1;v2] ->
+		push ctx [VStr "FSCommand:"];
+		generate_val ctx v1;
+		write ctx AStringAdd;
+		generate_val ctx v2;
+		write ctx (AGetURL2 0)
 	| EConst (Ident ("getURL" as x)) , params
 	| EConst (Ident ("loadMovie" as x)) , params
 	| EConst (Ident ("loadVariables" as x)) , params ->
