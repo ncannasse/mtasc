@@ -20,8 +20,7 @@
 			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="ocamake -opt -pp camlp4o mtasc.dsp extLib.cmxa extc.cmxa "
-				ReBuildCommandLine="ocamake -opt -pp camlp4o mtasc.dsp extLib.cmxa extc.cmxa  /a"
+				BuildCommandLine="ocamake -opt -pp camlp4o mtasc.dsp extLib.cmxa extc.cmxa swfLib.cmxa"
 				Output="mtasc.exe"/>
 		</Configuration>
 		<Configuration
@@ -33,8 +32,7 @@
 			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="ocamake -lp -custom -pp camlp4o mtasc.vcproj extLib.cma extc.cma"
-				ReBuildCommandLine="ocamake -lp -custom -pp camlp4o mtasc.vcproj extLib.cma extc.cma /a"
+				BuildCommandLine="ocamake -lp -custom -pp camlp4o mtasc.vcproj extLib.cma extc.cma swfLib.cma"
 				Output="mtasc.exe"/>
 		</Configuration>
 	</Configurations>
