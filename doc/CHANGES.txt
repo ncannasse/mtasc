@@ -3,6 +3,7 @@
 	some missing headers 
 	fixed problem with -mx (classes initialized before mx components)
 	added check function for values without side effects
+	relaxed array access typing
 	
 2005-03-10 : 1.02
 	test if class already exists (multiple swf statics init)

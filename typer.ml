@@ -535,10 +535,6 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 	| EArray (v1,v2) -> 
 		let t = type_val ctx v1 in
 		let t2 = type_val ctx v2 in
-		(match t2 with
-		| Dyn -> ()
-		| _ ->
-			if not (is_number ctx t2) && not(is_string ctx t2) && not(is_boolean ctx t2) then error (Cannot_unify (t2,ctx.inumber)) (pos v2));
 		Dyn
 	| EBinop (op,v1,v2) ->
 		type_binop ctx op v1 v2 p
