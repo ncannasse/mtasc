@@ -1241,13 +1241,15 @@ let generate file ~compress exprs =
 			insert loop acc [x2;x1] l
 		| ({ tdata = TShowFrame } as x) :: l ->
 			insert loop acc [x] l
-		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
+		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l when
 			(not !keep || e = "__Packages.MTASC") &&
 			String.length e > 11 &&
-			String.sub e 0 11 = "__Packages." &&
-			(not !use_components || String.length e <= 14 || String.sub e 0 14 <> "__Packages.mx.")
+			String.sub e 0 11 = "__Packages."
 			->
-				loop acc l
+				if !use_components && String.length e > 14 && String.sub e 0 14 = "__Packages.mx." then
+					x :: y :: z :: loop acc l
+				else
+					loop acc l
 		| { tdata = TDoInitAction { dia_actions = d } } as x :: l ->
 			(match DynArray.to_list d with
 			[
