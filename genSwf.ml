@@ -415,9 +415,7 @@ let generate_constant ctx p = function
 	| Int str -> push ctx [VInt32 (try Int32.of_string str with _ -> error p)]
 	| Float str -> push ctx [VFloat (try float_of_string str with _ -> error p)]
 	| String s -> push ctx [VStr (unescape_chars s)]
-	| Ident s
-	| Name s ->
-		assert false
+	| Ident s -> assert false
 
 let generate_breaks ctx olds =
 	List.iter (fun f -> f()) ctx.breaks;
@@ -435,8 +433,6 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 		VarObj
 	| EConst (Ident s) ->
 		generate_ident ctx s p
-	| EConst (Name s) ->
-		generate_access ~forcall ctx (EStatic ([],s),p)
 	| EField (v,s) ->
 		generate_val ctx v;
 		push ctx [VStr s];
@@ -593,7 +589,6 @@ and generate_call ?(newcall=false) ctx v vl =
 and generate_val ?(retval=true) ctx (v,p) =
 	match v with
 	| EConst (Ident _)
-	| EConst (Name _)
 	| EArray _
 	| EField _
 	| EStatic _ ->
@@ -633,8 +628,8 @@ and generate_val ?(retval=true) ctx (v,p) =
 		push ctx [VInt nfields];
 		write ctx AInitArray;
 		ctx.stack_size <- ctx.stack_size - nfields;
-	| ENew (p,args) ->
-		generate_call ~newcall:true ctx (EStatic p,null_pos) args
+	| ENew (v,args) ->
+		generate_call ~newcall:true ctx v args
 	| EUnop (Not,_,v) -> 
 		generate_val ctx v;
 		write ctx ANot
@@ -927,7 +922,7 @@ let to_utf8 str =
 	String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
 	UTF8.Buf.contents b
 
-let generate input file ~compress ~keep exprs =
+let generate file ~compress ~keep exprs =
 	let file , linkage =
 		(try
 			let f,l = String.split file "@" in
@@ -963,76 +958,33 @@ let generate input file ~compress ~keep exprs =
 	let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) ctx.idents [] in
 	let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
 	DynArray.set ctx.ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));	
-	let in_header, in_data = (match input with
-		| None -> None , None 
-		| Some file ->
-			let ch = IO.input_channel (open_in_bin file) in
-			let h , d = Swf.parse ch in
-			IO.close_in ch;
-			Some h , Some d
-	) in
+	
+	let ch = IO.input_channel (open_in_bin file) in
+	let header, data = Swf.parse ch in
+	IO.close_in ch;
+
 	let ch = IO.output_channel (open_out_bin file) in
-	let header = (match in_header with 
-		| None ->
-			{
-				h_version = 7;
-				h_size = {
-					rect_nbits = 15;
-					left = 0;
-					right = 14000;
-					top = 0;
-					bottom = 9600;
-				};
-				h_fps = 10240;
-				h_frame_count = 1;
-				h_compressed = compress;
-			}
-		| Some h -> h)
-	in
 	let tag d = {
 		tid = 0;
 		textended = false;
 		tdata = d;
 	} in
-	let data = 
-		(match in_data with
-		| None ->
-			List.map tag 
-				(TSetBgColor { cr = 0xFF; cg = 0xFF; cb = 0xFF } ::
-				(match linkage with
-				| None -> 
-					[TDoAction ctx.ops ; TShowFrame]
-				| Some link ->
-					[
-						TClip {
-							c_id = 1;
-							c_frame_count = 1;
-							c_tags = [
-								tag (TDoAction ctx.ops);
-								tag TShowFrame
-							]
-						};
-						TExport [{ exp_id = 1; exp_name = link }];
-						TShowFrame
-				]))
-		| Some d ->
-			let rec loop = function
-				| [] -> assert false
-				| ({ tdata = TShowFrame } :: l as all) -> 
-					let clip_id = 0xFFFF in
-					tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [tag TShowFrame] }) ::
-					tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
-					all
-				| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
-					not keep &&
-					String.length e > 11 &&
-					String.sub e 0 11 = "__Packages." -> loop l
-				| x :: l ->
-					x :: loop l
-			in
-			loop d
-	) in
-	Swf.write ch (header,data);
+	let rec loop = function
+		| [] -> assert false
+		| ({ tdata = TShowFrame } :: l as all) -> 
+			let clip_id = 0xFFFF in
+			tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [tag TShowFrame] }) ::
+			tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.MTASC" }]) ::
+			tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
+			all
+		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
+			(not keep || e = "__Packages.MTASC") &&
+			String.length e > 11 &&
+			String.sub e 0 11 = "__Packages." -> loop l
+		| x :: l ->
+			x :: loop l
+	in
+	Swf.write ch (header,loop data);
 	IO.close_out ch
 
 ;;

@@ -1,0 +1,11 @@
+2004-10-27 : beta2
+	fixed typing of super constructor
+	removed naming conventions
+	added error on import x.* usage
+	fixed var x : Function = Class typing
+	new build model : update SWF by removing AS2 classes (and -keep)
+	fixed registerClass in statics : classes just before first ShowFrame
+	partly rewrote usage documentation
+
+2004-10-25 : beta1
+	compiler working, starting beta
