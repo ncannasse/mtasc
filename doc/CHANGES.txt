@@ -1,4 +1,5 @@
 2004-12-?? : beta7
+	released restriction on super
 	fixed imports in lambdas
 	pop instead of trace for string mark.
 	fixed missing implementation of import wildcards for genSwf
