@@ -671,7 +671,7 @@ let type_class ctx cpath herits e imports file interf =
 	in
 	let spath = loop herits in
 	clctx.super <- !load_class_ref ctx spath (pos e);
-	if clctx.super.interface then error (Custom "Cannot extends an interface") (pos e);
+	if clctx.super.interface && not clctx.interface then error (Custom "Cannot extends an interface") (pos e);
 	let rec loop = function
 		| [] -> []
 		| HImplements cpath :: l -> cpath :: loop l
@@ -679,6 +679,7 @@ let type_class ctx cpath herits e imports file interf =
 	in
 	clctx.implements <- List.map (fun cpath -> 
 		let c = !load_class_ref ctx (resolve_path clctx cpath) (pos e) in
+		if clctx.interface then error (Custom "Interface cannot implements another interface, use extends") (pos e);
 		if not c.interface then error (Custom "Cannot implements a class") (pos e);
 		c
 	) (loop herits);
@@ -752,7 +753,7 @@ let check_interfaces ctx () =
 			| i :: l -> loop_fields i; loop_interf l
 			| [] -> ()
 		and loop_fields i =
-			loop_interf i.implements;
+			if i.super.interface then loop_fields i.super;
 			Hashtbl.iter (fun _ f ->
 				if f.f_static = IsMember then
 					match resolve cli f.f_name with
