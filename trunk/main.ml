@@ -81,7 +81,7 @@ let report (msg,p) etype printer =
 
 ;;
 try	
-	let usage = "Motion-Twin ActionScript2 Compiler v1.0 - (c)2004 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
+	let usage = "Motion-Twin ActionScript2 Compiler BETA-1 - (c)2004 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
 	let base_path = normalize_path (Filename.dirname (OSDep.exe_name())) in
 	let files = ref [] in
 	let input = ref None in
