@@ -525,7 +525,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		| Package pk when not in_field -> resolve_package ctx e pk p
 		| t -> t) in
 		(match e with
-		| EField ((EStatic p , pos) as v,_) , _ -> 
+		| EField ((EStatic p , pos) as v,_) , _ when f <> "prototype" -> 
 			let rec loop cl =
 				if Hashtbl.mem cl.statics f then
 					cl.path
