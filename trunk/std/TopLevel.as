@@ -19,7 +19,7 @@ intrinsic class TopLevel {
 	static function MMExecute(expr:String);
 
 	// private members are not stored into _global, they need special compilation opcodes
-	
+
 	private static function eval( e : String );
 	private static function getURL(url:String,target:String,vars:String):Void;
 	private static function getTimer():Number;
@@ -34,6 +34,6 @@ intrinsic class TopLevel {
 	private static function typeof( o ) : String;
 	private static function instanceof( o : Object, cl : Object ) : Boolean;
 	private static function targetPath( o : MovieClip ) : String;
-	
+	private static var arguments : Array;
 
 }
