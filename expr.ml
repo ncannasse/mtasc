@@ -86,8 +86,6 @@ type token =
 	| Dot
 	| DblDot
 	| Question
-	| Arrow
-	| Quote of string
 
 type unop_flag =
 	| Prefix
@@ -158,7 +156,7 @@ and expr = expr_def * pos
 and sign_def =
 	| EClass of type_path * herit list * expr
 	| EInterface of type_path * herit list * expr
-	| EImport of type_path
+	| EImport of string list * string option
 
 and signature = sign_def * pos
 
@@ -280,5 +278,3 @@ let s_token = function
 	| Dot -> "."
 	| DblDot -> ":"
 	| Question -> "?"
-	| Arrow -> "->"
-	| Quote s -> s 

@@ -41,7 +41,7 @@ CFG=mtasc - Win32 Debug
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir ""
 # PROP Intermediate_Dir ""
-# PROP Cmd_Line "ocamake -opt -pp camlp4o mtasc.dsp win32.cmxa extLib.cmxa zip.cmxa"
+# PROP Cmd_Line "ocamake -opt -pp camlp4o mtasc.dsp extLib.cmxa"
 # PROP Rebuild_Opt "/a"
 # PROP Target_File "mtasc.exe"
 # PROP Bsc_Name ""

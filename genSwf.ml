@@ -927,7 +927,7 @@ let to_utf8 str =
 	String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
 	UTF8.Buf.contents b
 
-let generate input file compress exprs =
+let generate input file ~compress ~keep exprs =
 	let file , linkage =
 		(try
 			let f,l = String.split file "@" in
@@ -1016,14 +1016,21 @@ let generate input file compress exprs =
 						TShowFrame
 				]))
 		| Some d ->
-			match d with
-			| [] -> assert false
-			| bg :: data ->
-				let clip_id = 0xFFFF in
-				bg :: 
-				tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [tag TShowFrame] }) ::
-				tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
-				data
+			let rec loop = function
+				| [] -> assert false
+				| ({ tdata = TShowFrame } :: l as all) -> 
+					let clip_id = 0xFFFF in
+					tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [tag TShowFrame] }) ::
+					tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
+					all
+				| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
+					not keep &&
+					String.length e > 11 &&
+					String.sub e 0 11 = "__Packages." -> loop l
+				| x :: l ->
+					x :: loop l
+			in
+			loop d
 	) in
 	Swf.write ch (header,data);
 	IO.close_out ch

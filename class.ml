@@ -129,8 +129,10 @@ let generate_exprs h fname el =
 			add_class false path herits e
 		| EInterface (path,herits,e) ->
 			add_class true path herits e
-		| EImport path ->
-			Hashtbl.add imports (snd path) path
+		| EImport (path,Some name) ->
+			Hashtbl.add imports name (path,name)
+		| EImport (path,None) ->
+			assert false
 	in
 	List.iter loop el
 
