@@ -557,6 +557,9 @@ and generate_geturl ctx c vars p =
 
 and generate_call ?(newcall=false) ctx v vl =
 	match fst v , vl with
+	| EConst (Ident "trace") , [v] ->
+		generate_val ctx v;
+		write ctx ATrace
 	| EConst (Ident "instanceof") , [v1;v2] ->
 		generate_val ctx v1;
 		generate_val ctx v2;
