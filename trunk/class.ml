@@ -109,7 +109,9 @@ let resolve clctx (path,name) =
 
 let rec resolve_supervar c name =
 	match c.superclass with
-	| None -> assert false
+	| None -> 
+		failwith (s_type_path c.path ^ ":" ^ name);
+		assert false
 	| Some c ->
 		try
 			if Hashtbl.find c.vars name = IsStatic then
@@ -123,6 +125,7 @@ let rec resolve_supervar c name =
 let generate_exprs h fname el =
 	let imports = Hashtbl.create 0 in
 	let add_class interf path herits e =
+		Hashtbl.add imports (snd path) path;
 		Hashtbl.add h path {
 			filename = fname;
 			path = path;
