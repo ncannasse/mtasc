@@ -10,6 +10,7 @@
 	fixed parsing of  x = y ? z : w;
 	fixed auto self import in swf generation
 	forbidden calls to super when no super available
+	typeof as operator (parenthesis are optional)
 
 2004-11-17 : beta5
 	fixed back the Export name to "MTASC" (causing problem with -keep)
