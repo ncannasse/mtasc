@@ -1,4 +1,4 @@
-2005-02-?? : 1.01
+2005-02-21 : 1.01
 	fixed doaction/showframe inversion
 	Number, String and Boolean now perform conversion
 	fixed error in inherited statics
@@ -6,7 +6,8 @@
 	added fscommand.
 	added -exclude
 	fixed $ in identifiers
-	
+	fixed return in for..in bug.
+	fixed inherited statics and super constructor typecheck.
 
 2005-01-26 : 1.0
 	fixed super field accesses
