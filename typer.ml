@@ -707,7 +707,7 @@ let rec type_expr ctx (e,p) =
 		| Static _ -> error (Custom "Invalid type for 'with' argument") p
 		| Package _ -> assert false
 		| Dyn
-		| Function _ -> prerr_endline ("Warning : 'with' argument is not typed in " ^ p.pfile)
+		| Function _
 		| Class _ -> ());
 		ctx.curwith <- Some t;
 		ignore(type_expr ctx e);
