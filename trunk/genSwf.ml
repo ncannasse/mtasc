@@ -19,7 +19,6 @@
 
 open Expr
 open Swf
-open SwfZip
 open ExtHashtbl
 open ExtString
 
@@ -225,8 +224,11 @@ let func ctx args constructor arguments =
 let setvar ?(retval=false) ctx = function
 	| VarReg (-1) -> assert false (** true, false, null **)
 	| VarReg n -> write ctx (ASetReg n); if not retval then write ctx APop
-	| VarStr -> write ctx ASet
-	| VarObj -> write ctx AObjSet
+	| VarStr
+	| VarObj as s -> 
+		if retval then write ctx (ASetReg 0);
+		write ctx (if s = VarStr then ASet else AObjSet);
+		if retval then push ctx [VReg 0]
 
 let getvar ctx = function
 	| VarReg (-1) -> () (** true, false, null **)
@@ -666,9 +668,7 @@ and generate_val ?(retval=true) ctx (v,p) =
 		let k = generate_access ctx v in
 		getvar ctx k;
 		write ctx (match op with Increment -> AIncrement | Decrement -> ADecrement | _ -> assert false);
-		if retval && flag = Prefix then write ctx (ASetReg 0);
-		setvar ctx k;
-		if retval && flag = Prefix then push ctx [VReg 0]
+		setvar ~retval:(retval && flag = Prefix) ctx k
 
 let generate_local_var ctx (vname,_,vinit) =
 	if used_in_block false vname ctx.cur_block then begin
@@ -1079,6 +1079,7 @@ let make_header s =
 
 ;;
 generate_function_ref := generate_function;
+SwfParser.init SwfZip.inflate SwfZip.deflate;
 let swf = ref None in
 Plugin.add [
 	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
