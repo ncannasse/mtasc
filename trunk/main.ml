@@ -123,6 +123,7 @@ try
 		("-pack",Arg.String (fun path -> files := read_package path @ !files),"<path> : compile all files in target package");
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
+		("-strict",Arg.Unit (fun () -> Typer.strict_mode := true),": turn on strict mode");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 	] @ !Plugin.options in
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
