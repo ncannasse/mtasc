@@ -195,8 +195,8 @@ and signature = sign_def * pos
 
 let pos = snd
 
-let is_postfix = function
-	| Increment | Decrement -> true
+let is_postfix (e,_) = function
+	| Increment | Decrement -> (match e with EConst _ | EField _ | EStatic _ | EArray _ -> true | _ -> false)
 	| Not | Neg | NegBits -> false
 
 let is_prefix = function

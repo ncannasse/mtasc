@@ -1,3 +1,7 @@
+2005-04-?? : 1.04
+	"for" optional first parameter and expression 
+	fixed while( o )++ i; 
+	
 2005-03-24 : 1.03
 	fixed "interface extends interface" bytecode generation
 	some missing headers 
