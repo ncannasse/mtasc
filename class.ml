@@ -39,7 +39,7 @@ type context = {
 	mutable superclass : context option;
 	mutable constructor : func option;
 	mutable generated : generated;
-	mutable statics : (string * eval) list;
+	mutable initvars : (string * static_flag * eval) list;
 	mutable methods : func list;
 }
 
@@ -56,7 +56,7 @@ let empty =  {
 	superclass = None;
 	constructor = None;
 	generated = NotYet;
-	statics = [];
+	initvars = [];
 	exprs = [];
 	methods = [];
 }
@@ -86,8 +86,8 @@ let superclass clctx =
 let methods clctx =
 	clctx.methods
 
-let statics clctx =
-	clctx.statics
+let initvars clctx =
+	clctx.initvars
 
 let intrinsic clctx =
 	List.exists (( = ) HIntrinsic) clctx.herits
@@ -134,7 +134,7 @@ let generate_exprs h fname el =
 			constructor = None;
 			superclass = None;
 			interfaces = [];
-			statics = [];
+			initvars = [];
 			methods = [];
 			generated = NotYet;
 			expr = e;
@@ -159,11 +159,11 @@ let rec generate_class_vars h gen clctx (e,p) =
 	| EVars (static_flag,public_flag,vl) ->
 		List.iter (fun (name,_,vinit) ->
 			Hashtbl.add clctx.vars name static_flag;
-			match static_flag , vinit with
-			| IsStatic, Some v ->
-				clctx.statics <- (name,v) :: clctx.statics;
-				generate_class_static_refs h gen clctx v
-			| _ , _ -> ()
+			match vinit with
+			| Some v ->
+				clctx.initvars <- (name,static_flag,v) :: clctx.initvars;
+				if static_flag = IsStatic then generate_class_static_refs h gen clctx v
+			| _ -> ()
 		) vl
 	| EFunction f ->		
 		if f.fname = snd clctx.path then
@@ -239,7 +239,7 @@ and generate_class h gen clctx =
 		List.iter generate_herit clctx.herits;
 		generate_class_vars h gen clctx clctx.expr;
 		clctx.methods <- List.rev clctx.methods;
-		clctx.statics <- List.rev clctx.statics;
+		clctx.initvars <- List.rev clctx.initvars;
 		gen clctx;
 		clctx.generated <- Done
 
