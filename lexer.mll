@@ -113,7 +113,7 @@ let mk_ident lexbuf =
 
 }
 
-let ident = ['_' '$' 'a'-'z' 'A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
+let ident = ['_' '$' 'a'-'z' 'A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9' '$']*
 
 rule token = parse
 	| eof { mk lexbuf Eof }

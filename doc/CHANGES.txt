@@ -3,6 +3,7 @@
 	Number, String and Boolean now perform conversion
 	fixed error in inherited statics
 	fixed break in for...in
+	added fscommand.
 
 2005-01-26 : 1.0
 	fixed super field accesses
