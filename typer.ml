@@ -88,6 +88,7 @@ exception File_not_found of string
 
 let verbose = ref false
 let strict_mode = ref false
+let use_components = ref false
 
 let error msg p = raise (Error (msg,p))
 
@@ -262,7 +263,7 @@ let rec add_class_field ctx clctx fname stat pub get ft p =
 		| Some f ->
 			{
 				f_name = fname;
-				f_type = begin unify f.f_type t f.f_pos; unify t f.f_type p; t end;
+				f_type = begin (try unify f.f_type t f.f_pos; unify t f.f_type p; t with Error (Cannot_unify _,_) when !use_components -> f.f_type) end;
 				f_static = stat;
 				f_public = (if pub <> f.f_public then error (Custom "Getter and setter have different public/private visibility") p else pub);
 				f_pos = p;
@@ -693,9 +694,9 @@ let type_function ?(lambda=false) ctx clctx f p =
 		Function (argst,ctx.returns)
 
 
-let rec type_class_fields ctx clctx (e,p) =
+let rec type_class_fields ctx clctx comp (e,p) =
 	match e with
-	| EBlock el -> List.iter (type_class_fields ctx clctx) el
+	| EBlock el -> List.iter (type_class_fields ctx clctx comp) el
 	| EVars (stat,pub,vl) ->
 		List.iter (fun (vname,vtype,vinit) ->
 			let t = t_opt ctx p vtype in
@@ -703,7 +704,7 @@ let rec type_class_fields ctx clctx (e,p) =
 			match vinit with
 			| None -> ()
 			| Some v ->
-				add_finalizer ctx (fun () -> 
+				if not comp then add_finalizer ctx (fun () -> 
 					ctx.current <- clctx;
 					unify (type_val ctx v) t p
 				)
@@ -716,7 +717,7 @@ let rec type_class_fields ctx clctx (e,p) =
 			| Some _ -> error (Custom "Duplicate constructor") p;
 		end else
 			add_class_field ctx clctx f.fname f.fstatic f.fpublic f.fgetter t p;
-		if f.fexpr <> None then add_finalizer ctx (fun () -> ignore(type_function ctx clctx f p));
+		if f.fexpr <> None && not comp then add_finalizer ctx (fun () -> ignore(type_function ctx clctx f p));
 	| _ ->
 		assert false
 
@@ -745,6 +746,8 @@ let type_class ctx cpath herits e imports file interf native s =
 		| HDynamic
 		| HIntrinsic as x -> x
 	) herits in
+	let is_component = !use_components && (match clctx.path with ("mx" :: _ , _) -> true | _ -> false) in
+	let herits = (if is_component then HIntrinsic :: herits else herits) in
 	Obj.set_field (Obj.repr s) 0 (Obj.repr (if interf then EInterface (cpath,herits,e) else EClass (cpath,herits,e)));
 	let rec loop = function
 		| [] -> !load_class_ref ctx ([],"Object") (pos e)
@@ -764,7 +767,7 @@ let type_class ctx cpath herits e imports file interf native s =
 		if not c.interface then error (Custom "Cannot implements a class") (pos e);
 		c
 	) (loop herits);
-	type_class_fields ctx clctx e;
+	type_class_fields ctx clctx is_component e;
 	ctx.current <- old;
 	clctx
 
