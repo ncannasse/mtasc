@@ -447,8 +447,7 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 		generate_val ctx v;
 		push ctx [VStr s];
 		VarObj
-	| EStatic path ->
-		let p , s = Class.resolve ctx.current path in
+	| EStatic (p,s) ->
 		let k = generate_package ~fast:true ctx p in
 		push ctx [VStr s];
 		k
