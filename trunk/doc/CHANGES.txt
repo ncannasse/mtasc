@@ -13,6 +13,7 @@
 	(hotfixes)
 	added static getter/setters
 	fixed interface A extends B
+	class import itself
 
 2004-10-27 : beta2
 	fixed typing of super constructor

@@ -662,6 +662,7 @@ let type_class ctx cpath herits e imports file interf =
 		implements = [];
 		imports = imports;
 	} in
+	Hashtbl.add imports clctx.name clctx.path;
 	Hashtbl.add ctx.classes cpath clctx;
 	ctx.current <- clctx;
 	let rec loop = function
