@@ -8,7 +8,6 @@ intrinsic class TopLevel {
 	static function unescape(value:String):String;
 	static function parseInt(value:String,radix:Number):Number;
 	static function parseFloat(value:String):Number;
-	static function trace(value):Void;
 	static function updateAfterEvent():Void;
 	static function isNaN(value:Object):Boolean;
 	static function isFinite(value:Object):Boolean;
@@ -20,6 +19,7 @@ intrinsic class TopLevel {
 
 	// private members are not stored into _global, they need special compilation opcodes
 
+	private static function trace(value):Void;
 	private static function eval( e : String );
 	private static function getURL(url:String,target:String,vars:String):Void;
 	private static function getTimer():Number;
