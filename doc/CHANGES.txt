@@ -1,5 +1,6 @@
 2004-10-XX : beta3
 	checks that implements an interface and extends a class
+	added physical (in)equality operation
 
 2004-10-27 : beta2
 	fixed typing of super constructor
