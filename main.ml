@@ -91,10 +91,12 @@ let rec parse_class_path base_path path =
 let read_package path =
 	let npath = normalize_path path in
 	let rec loop = function
-		| [] -> []
+		| [] ->
+			Printf.eprintf "Warning : package %s not found\n" path;
+			[]
 		| cpath :: l ->
 			let filepath = normalize_path (cpath ^ path) in
-			match Array.to_list (Sys.readdir filepath) with
+			match Array.to_list (try Sys.readdir filepath with Sys_error _ -> [||]) with
 			| [] -> loop l
 			| files ->
 				match List.filter (fun f -> String.ends_with (String.lowercase f) ".as") files with
