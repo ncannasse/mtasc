@@ -375,6 +375,7 @@ let type_constant ctx c e p =
 			Dyn
 		else begin
 			if ctx.in_static then error (Custom "Cannot access super in static function") p;
+			if ctx.current.super.super == ctx.current.super then error (Custom "Class does not have a super") p;			
 			Class ctx.current.super
 		end
 	| Ident name ->
@@ -520,6 +521,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 	| ECall ((EConst (Ident "super"),_),args) ->
 		if not ctx.in_constructor then error (Custom "Super constructor can only be called in class constructor") p;
 		let args = List.map (type_val ctx) args in
+		if ctx.current.super.super == ctx.current.super then error (Custom "Class does not have a super") p;
 		(match resolve (Class ctx.current.super) (snd ctx.current.super.path) with
 		| None -> ()
 		| Some t ->
