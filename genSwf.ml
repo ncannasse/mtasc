@@ -89,7 +89,7 @@ let stack_delta = function
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
 
-let enable_main = ref true
+let enable_main = ref false
 
 let write ctx op =
 	let write b op =
@@ -1008,7 +1008,8 @@ let generate file ~compress exprs =
 		if not (Class.intrinsic clctx) then generate_class_code ctx clctx
 	) exprs;
 	(match ctx.main with
-	| None -> ()
+	| None ->
+		if !enable_main then failwith "Main entry point not found";
 	| Some (p,clname) -> 
 		push ctx [VInt 0];
 		let k = generate_package ~fast:true ctx p in
@@ -1098,7 +1099,7 @@ Plugin.add [
 	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
 	("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
 	("-frame",Arg.Int (fun i -> if i <= 0 then raise (Arg.Bad "Invalid frame"); frame := i),"<frame> : export into target frame (must exist in the swf)");
-	("-nomain",Arg.Unit (fun () -> enable_main := false),": disable main entry point, if exists");
+	("-main",Arg.Unit (fun () -> enable_main := true),": enable main entry point");
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
 ]
 (fun t ->
