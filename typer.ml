@@ -34,17 +34,22 @@ and class_field = {
 	f_pos : pos;
 }
 
+and imports = {
+	paths : (string,type_path) Hashtbl.t;
+	mutable wildcards : string list list;
+}
+
 and class_context = {
 	path : type_path;
 	name : string;
 	file : string;
 	interface : bool;
 	dynamic : bool;
+	imports : imports;
 	fields : (string,class_field) Hashtbl.t;
 	statics : (string,class_field) Hashtbl.t;
 	mutable super : class_context;
 	mutable implements : class_context list;
-	mutable imports : (string,type_path) Hashtbl.t;
 }
 
 type local = {
@@ -117,13 +122,20 @@ let is_string ctx = function
 	| Class c when c == (match ctx.istring with Class c2 -> c2 | _ -> assert false) -> true
 	| _ -> false
 
-let resolve_path clctx = function
-	| (_ :: _) , _ as p -> p
+let resolve_path ctx p pos =
+	match p with
+	| (_ :: _) , _ -> !load_class_ref ctx p pos
 	| [] , n ->
-		try
-			Hashtbl.find clctx.imports n
-		with
-			Not_found -> [] , n
+		let rec loop = function
+			| [] -> 
+				!load_class_ref ctx (try Hashtbl.find ctx.current.imports.paths n with Not_found -> p) pos
+			| pk :: l ->
+				try
+					!load_class_ref ctx (pk,n) pos
+				with
+					Error (Class_not_found p,_) when p = (pk,n) -> loop l
+		in
+		loop ctx.current.imports.wildcards
 
 (* check that ta >= tb *)
 let rec unify ta tb p =
@@ -153,15 +165,12 @@ let rec unify ta tb p =
 	| _ , _ ->
 		error (Cannot_unify (ta,tb)) p
 
-let t_opt ctx clctx p = function
+let t_opt ctx p = function
 	| None -> Dyn
-	| Some t -> 
-		match resolve_path clctx t with
-		| [] , "Void" -> Void
-		| cp ->
-			Class (!load_class_ref ctx cp p)
+	| Some ([],"Void") -> Void
+	| Some t -> Class (resolve_path ctx t p)
 
-let ret_opt ctx clctx p f =
+let ret_opt ctx p f =
 	let rec has_return (e,p) =
 		match e with
 		| EVars _ 
@@ -191,7 +200,7 @@ let ret_opt ctx clctx p f =
 		(match f.ftype with
 		| None | Some ([],"Void") -> Void
 		| Some cp -> error (Custom ("Missing return of type " ^ s_type_path cp)) p)
-	| _ -> t_opt ctx clctx p f.ftype
+	| _ -> t_opt ctx p f.ftype
 
 let rec add_class_field ctx clctx fname stat pub get ft p =
 	let h = (match stat with IsStatic -> clctx.statics | IsMember -> clctx.fields) in
@@ -384,15 +393,23 @@ let rec resolve_package ctx v (p : string list) pos =
 			loop t fields
 		in
 		let rec loop = function
-			| [] ->	error (Custom ("Unknown class " ^ String.concat "." p)) pos
+			| [] ->
+				let rec last = function
+					| x :: [] -> x
+					| x :: l -> last l
+					| [] -> assert false
+				in
+				(match last p with
+				| x when String.length x > 0 && x.[0] >= 'A' && x.[0] <= 'Z' -> error (Custom ("Unknown class " ^ String.concat "." p)) pos
+				| _ -> error (Custom ("Unknown variable " ^ List.hd p)) pos)
 			| p :: l ->
 				try 
 					search_package p
 				with
 					Exit -> loop l
 		in
-		let p2 , n = resolve_path ctx.current ([],cname) in
-		loop [p2 @ n :: fields] (* can add imports wildcards later *)
+		let p2 , n = (try Hashtbl.find ctx.current.imports.paths cname with Not_found -> ([],cname)) in
+		loop ((p2 @ n :: fields) :: (List.map (fun p -> p @ cname :: fields) ctx.current.imports.wildcards))
 
 and type_field ctx t f p =
 	match resolve t f with
@@ -475,8 +492,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		| Package pk when not in_field -> resolve_package ctx e pk p
 		| t -> t)
 	| EStatic cpath ->
-		let cpath = resolve_path ctx.current cpath in
-		Static (!load_class_ref ctx cpath p)
+		Static (resolve_path ctx cpath p)
 	| EParenthesis v ->
 		type_val ctx v
 	| EObjDecl vl ->
@@ -550,7 +566,7 @@ let rec type_expr ctx (e,p) =
 	match e with
 	| EVars (_,_,vl) ->
 		let vt = List.map (fun (name,t,v) -> 
-			let t = t_opt ctx ctx.current p t in
+			let t = t_opt ctx p t in
 			(match v with None -> () | Some v -> unify (type_val ctx v) t (pos v));
 			name , t
 		) vl in
@@ -619,9 +635,9 @@ let type_function ?(lambda=false) ctx clctx f p =
 				in_lambda = lambda;
 		} in
 		let fr = new_frame ctx in
-		ctx.returns <- ret_opt ctx clctx p f;
+		ctx.returns <- ret_opt ctx p f;
 		let argst = List.map (fun (a,t) -> 
-			let t = t_opt ctx clctx p t in
+			let t = t_opt ctx p t in
 			define_local ctx a t p;
 			t
 		) f.fargs in
@@ -635,7 +651,7 @@ let rec type_class_fields ctx clctx (e,p) =
 	| EBlock el -> List.iter (type_class_fields ctx clctx) el
 	| EVars (stat,pub,vl) ->
 		List.iter (fun (vname,vtype,vinit) ->
-			let t = t_opt ctx clctx p vtype in
+			let t = t_opt ctx p vtype in
 			add_class_field ctx clctx vname stat pub Normal t p;
 			match vinit with
 			| None -> ()
@@ -646,7 +662,7 @@ let rec type_class_fields ctx clctx (e,p) =
 				)
 		) vl
 	| EFunction f -> 
-		let t = Function (List.map (fun (_,t) -> t_opt ctx clctx p t) f.fargs , ret_opt ctx clctx p f) in
+		let t = Function (List.map (fun (_,t) -> t_opt ctx p t) f.fargs , ret_opt ctx p f) in
 		add_class_field ctx clctx f.fname f.fstatic f.fpublic f.fgetter t p;
 		if f.fexpr <> None then add_finalizer ctx (fun () -> ignore(type_function ctx clctx f p));
 	| _ ->
@@ -666,16 +682,15 @@ let type_class ctx cpath herits e imports file interf =
 		implements = [];
 		imports = imports;
 	} in
-	Hashtbl.add imports clctx.name clctx.path;
+	Hashtbl.add imports.paths clctx.name clctx.path;
 	Hashtbl.add ctx.classes cpath clctx;
 	ctx.current <- clctx;
 	let rec loop = function
-		| [] -> [],"Object"
-		| HExtends cpath :: _ -> resolve_path clctx cpath
+		| [] -> !load_class_ref ctx ([],"Object") (pos e)
+		| HExtends cpath :: _ -> resolve_path ctx cpath (pos e)
 		| _ :: l -> loop l
-	in
-	let spath = loop herits in
-	clctx.super <- !load_class_ref ctx spath (pos e);
+	in	
+	clctx.super <- loop herits;
 	if clctx.super.interface && not clctx.interface then error (Custom "Cannot extends an interface") (pos e);
 	let rec loop = function
 		| [] -> []
@@ -683,7 +698,7 @@ let type_class ctx cpath herits e imports file interf =
 		| _ :: l -> loop l
 	in
 	clctx.implements <- List.map (fun cpath -> 
-		let c = !load_class_ref ctx (resolve_path clctx cpath) (pos e) in
+		let c = resolve_path ctx cpath (pos e) in
 		if clctx.interface then error (Custom "Interface cannot implements another interface, use extends") (pos e);
 		if not c.interface then error (Custom "Cannot implements a class") (pos e);
 		c
@@ -692,23 +707,26 @@ let type_class ctx cpath herits e imports file interf =
 	ctx.current <- old;
 	clctx
 
-let type_file ctx req_path file el =
+let type_file ctx req_path file el pos =
 	let clctx = ref None in
-	let imports = Hashtbl.create 0 in
+	let imports = {
+		paths = Hashtbl.create 0;
+		wildcards = [];
+	} in
 	List.iter (fun (s,p) ->
 		match s with
 		| EClass (t,hl,e) -> 
-			if t <> req_path then error (Class_name_mistake req_path) p;
+			if t <> req_path then error (Class_name_mistake t) pos;
 			if !clctx <> None then assert false;
 			clctx := Some (type_class ctx t hl e imports file false)
 		| EInterface (t,hl,e) ->
-			if t <> req_path then error (Class_name_mistake req_path) p;
+			if t <> req_path then error (Class_name_mistake t) pos;
 			if !clctx <> None then assert false;
 			clctx := Some (type_class ctx t hl e imports file true)
 		| EImport (p,Some name) ->
-			Hashtbl.add imports name (p,name)
+			Hashtbl.add imports.paths name (p,name)
 		| EImport (pk,None) ->
-			error (Custom "import .* is not currently supported") p
+			imports.wildcards <- pk :: imports.wildcards
 	) el;
 	!clctx
 
@@ -745,7 +763,7 @@ let load_class ctx path p =
 				 | _ -> String.concat "/" (fst path) ^ "/" ^ snd path ^ ".as")
 			in
 			try
-				match type_file ctx path file_name (load_file ctx file_name) with
+				match type_file ctx path file_name (load_file ctx file_name) p with
 				| None -> error (Custom "Missing class definition") { pfile = file_name; pmin = 0; pmax = 0 }
 				| Some c -> c
 			with
