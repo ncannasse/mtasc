@@ -1,6 +1,14 @@
-2004-10-XX : beta3
+2004-11-03 : beta3
 	checks that implements an interface and extends a class
 	added physical (in)equality operation
+	added eval
+	added casts
+	fixed issue when std is not installed
+	added getter/setter
+	optimized prototype registration
+	fixed problem with AS2 classes not removed from SWF
+	added -frame for choosing export frame
+	added -header for creating SWF
 
 2004-10-27 : beta2
 	fixed typing of super constructor
