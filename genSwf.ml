@@ -74,7 +74,7 @@ let stack_delta = function
 	| AObject | AInitArray -> 0 (** calculated outside **)
 	| ASet -> -2
 	| APop -> -1
-	| AFunction2 _ -> 1	
+	| AFunction _ | AFunction2 _ -> 1	
 	| ADup -> 1
 	| AObjGet -> -1
 	| AObjSet -> -3
@@ -741,9 +741,10 @@ let rec generate_expr ctx (e,p) =
 		write ctx AEqual;
 		let jump_end = cjmp ctx in
 		(match fst decl with
-		| EVal (EConst (Ident x),_) ->
-			push ctx [VStr x; VReg 0];
-			write ctx ASet;
+		| EVal ((EConst (Ident _),_) as x) ->
+			let k = generate_access ctx x in
+			push ctx [VReg 0];
+			setvar ctx k
 		| EVars (_,_,[(x,_,None) as l]) ->
 			push ctx [VStr x];
 			Hashtbl.add ctx.locals x { reg = 0; sp = ctx.stack };
@@ -887,13 +888,16 @@ let rec generate_expr ctx (e,p) =
 			generate_expr ctx e;
 			tdata.tr_finallylen <- Some (ctx.code_pos - p))
 
+let super_call = EVal (ECall ((EConst (Ident "super"),null_pos),[]),null_pos) , null_pos
+
 let generate_function ?(constructor=false) ctx f =
 	match f.fexpr with
 	| None -> ()
 	| Some fexpr ->
 		let old_name = ctx.curmethod in
 		let stack_base , old_nregs = ctx.stack , ctx.reg_count in
-		let reg_super = used_in_block true "super" fexpr in
+		let have_super = used_in_block true "super" fexpr in
+		let reg_super = have_super || (constructor && Class.superclass ctx.current <> None) in
 		ctx.reg_count <- (if reg_super then 2 else 1);
 		if f.fname <> "" then ctx.curmethod <- f.fname;
 		ctx.stack <- ctx.stack + 1;
@@ -908,8 +912,9 @@ let generate_function ?(constructor=false) ctx f =
 			in
 			Hashtbl.add ctx.locals aname { reg = r; sp = ctx.stack };
 			r , aname
-		) f.fargs in		
+		) f.fargs in
 		let fdone = func ctx args reg_super (used_in_block true "arguments" fexpr) in
+		if constructor && Class.superclass ctx.current <> None && not have_super then generate_expr ctx super_call;
 		generate_expr ctx fexpr;
 		if f.fgetter = Setter then begin
 			push ctx [VInt 0;VThis;VStr ("__get__"^f.fname)];
@@ -945,7 +950,10 @@ let generate_class_code ctx clctx =
 	(match Class.constructor clctx with
 	| None -> 
 		let fdone = func ctx [] true false in
-		fdone 3;
+		(match Class.superclass clctx with
+		| None -> ()
+		| Some _ -> generate_expr ctx super_call);
+		fdone 3
 	| Some f ->
 		generate_function ~constructor:true ctx f);
 	write ctx (ASetReg 0);
@@ -968,10 +976,10 @@ let generate_class_code ctx clctx =
 			push ctx [VReg (if f.fstatic = IsMember then 1 else 0)];
 			let name = (match f.fgetter with
 				| Normal -> 
-					if f.fstatic = IsStatic && !enable_main then begin
+					if f.fname = "main" && f.fstatic = IsStatic && !enable_main then begin
 						match ctx.main with
 						| None -> ctx.main <- Some (Class.path clctx);
-						| Some _ -> failwith "Duplicate main entry point"
+						| Some path -> failwith ("Duplicate main entry point : " ^ s_type_path path ^ " and " ^ s_type_path (Class.path clctx))
 					end;
 					f.fname
 				| Getter -> 
@@ -993,18 +1001,20 @@ let generate_class_code ctx clctx =
 		let reg = (if stat = IsMember then 1 else 0) in
 		let getter = (get = Getter || Hashtbl.mem getters (name,Getter,stat)) in
 		let setter = (get = Setter || Hashtbl.mem getters (name,Setter,stat)) in
+		let no_getset = AFunction { f_name = ""; f_args = []; f_codelen = 0 } in
+
 		Hashtbl.add dones (name,Getter,stat) ();
 		Hashtbl.add dones (name,Setter,stat) ();
 		if setter then begin
 			push ctx [VReg reg; VStr ("__set__" ^ name)];
 			getvar ctx VarObj;
 		end else
-			push ctx [VNull];
+			write ctx no_getset;			
 		if getter then begin
 			push ctx [VReg reg; VStr ("__get__" ^ name)];
 			getvar ctx VarObj;
 		end else
-			push ctx [VNull];
+			write ctx no_getset;
 		push ctx [VStr name; VInt 3];
 		push ctx [VReg reg; VStr "addProperty"];
 		call ctx VarObj 3;
@@ -1039,6 +1049,7 @@ let to_utf8 str =
 			String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
 			UTF8.Buf.contents b
 
+let separate = ref false
 let keep = ref false
 let frame = ref 1
 let header = ref None
@@ -1073,14 +1084,36 @@ let generate file ~compress exprs =
 	DynArray.add ctx.ops (AStringPool []);
 	push ctx [VStr "Compiled with MTASC : http://tech.motion-twin.com"];
 	write ctx ATrace;
+	let tags = ref [] in
 	Class.generate (fun clctx ->
 		ctx.current <- clctx;
-		if not (Class.intrinsic clctx) then generate_class_code ctx clctx
+		let ctx = (if !separate then 
+				{ ctx with
+					idents = Hashtbl.create 0;
+					locals = Hashtbl.create 0;
+					stack_size = 0;
+					ops = DynArray.create();
+					code_pos = 1;
+					ident_count = 0;
+					stack = 0;
+					reg_count = 0;
+					opt_push = false;
+				}
+			else 
+				ctx
+		) in
+		if not (Class.intrinsic clctx) then begin
+			if !separate then DynArray.add ctx.ops (AStringPool []);
+			generate_class_code ctx clctx;
+			if !separate then tags := ("__Packages." ^ s_type_path (Class.path clctx),ctx.idents,ctx.ops) :: !tags;
+		end;
 	) exprs;
+	if not !separate then tags := [("__Packages.MTASC",ctx.idents,ctx.ops)];
 	(match ctx.main with
 	| None ->
 		if !enable_main then failwith "Main entry point not found";
 	| Some (p,clname) -> 
+		if !separate then failwith "-separate and -main are incompatible";
 		push ctx [VInt 0];
 		let k = generate_package ~fast:true ctx p in
 		push ctx [VStr clname];
@@ -1089,12 +1122,14 @@ let generate file ~compress exprs =
 		call ctx VarObj 0;
 		write ctx APop
 	);
-	let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) ctx.idents [] in
-	let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
-	DynArray.set ctx.ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));
-	let tag d = {
+	List.iter (fun (n,idents,ops) ->
+		let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) idents [] in
+		let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
+		DynArray.set ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));
+	) !tags;
+	let tag ?(ext=false) d = {
 		tid = 0;
-		textended = false;
+		textended = ext;
 		tdata = d;
 	} in
 	let header , data = (match !header with
@@ -1109,28 +1144,53 @@ let generate file ~compress exprs =
 	let ch = IO.output_channel (open_out_bin file) in
 	let found = ref false in
 	let curf = ref !frame in
+	let insert loop acc x l =
+		if !found || !curf > 1 then begin
+			curf := !curf - 1;
+			List.rev (x @ acc) @ loop [] l
+		end else begin
+			found := true;
+			let rec loop_tag cid = function
+				| [] -> List.rev (x @ acc) @ loop [] l
+				| (name,_,ops) :: l ->					
+					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
+					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
+					tag ~ext:true (TDoInitAction { dia_id = cid; dia_actions = ops }) ::
+					loop_tag (cid + 1) l
+			in
+			loop_tag 0x5000 !tags
+		end
+	in
 	let rec loop acc = function
 		| [] ->
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
 			List.rev acc
+		| ({ tdata = TDoAction _ } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
+			insert loop acc [x1;x2] l
 		| ({ tdata = TShowFrame } as x) :: l ->
-			if !found || !curf > 1 then begin
-				curf := !curf - 1;
-				List.rev (x :: acc) @ loop [] l
-			end else begin
-				found := true;
-				let clip_id = 0xFFFF in
-				tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [] }) ::
-				tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.MTASC" }]) ::
-				tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
-				List.rev (x :: acc) @ loop [] l
-			end
+			insert loop acc [x] l
 		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
 			(not !keep || e = "__Packages.MTASC") &&
 			String.length e > 11 &&
 			String.sub e 0 11 = "__Packages." ->
 				loop acc l
-		| { tdata = TDoInitAction _ } as x :: l ->
+		| { tdata = TDoInitAction { dia_actions = d } } as x :: l ->
+			(match DynArray.to_list d with
+			[
+				APush [PString clname];
+				AEval;
+				APush [PString mcname;PInt _;PString "Object"];
+				AEval;
+				APush [PString "registerClass"];
+				AObjCall;
+				APop
+			] -> 
+				let cpath = (match List.rev (String.nsplit clname ".") with [] -> assert false | x :: l -> List.rev l , x) in
+				(try
+					ignore(Class.getclass ctx.current cpath)
+				with
+					_ -> prerr_endline ("Warning : Missing class " ^ clname ^ " required by MovieClip " ^ mcname ^ " with registerClass"));
+			| _ -> ());
 			loop (x :: acc) l
 		| x :: l ->
 			x :: loop acc l
@@ -1171,6 +1231,7 @@ Plugin.add [
 	("-frame",Arg.Int (fun i -> if i <= 0 then raise (Arg.Bad "Invalid frame"); frame := i),"<frame> : export into target frame (must exist in the swf)");
 	("-main",Arg.Unit (fun () -> enable_main := true),": enable main entry point");
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
+	("-separate",Arg.Unit (fun () -> separate := true),": separate classes into different clips");
 ]
 (fun t ->
 	match !swf with 

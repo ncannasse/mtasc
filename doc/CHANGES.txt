@@ -2,6 +2,11 @@
 	fixed throw parsing
 	fixed <fun> , Function unification
 	fixed small parsing problem with typeof
+	fixed multi-interface subtyping.
+	fixed constructor handling
+	fixed bug in enum
+	added superconstructor autocall
+	added -separate
 	
 2005-01-05 : rc1
 	private methods can be called from childs
