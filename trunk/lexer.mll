@@ -126,6 +126,8 @@ rule token = parse
 	| ['0'-'9']+ { mk lexbuf (Const (Int (lexeme lexbuf))) }
 	| ['0'-'9']+ '.' ['0'-'9']* { mk lexbuf (Const (Float (lexeme lexbuf))) }
 	| '.' ['0'-'9']+ { mk lexbuf (Const (Float (lexeme lexbuf))) }
+	| ['0'-'9']+ ['e' 'E'] ['+' '-']? ['0'-'9']+ { mk lexbuf (Const (Float (lexeme lexbuf))) }
+	| ['0'-'9']+ '.' ['0'-'9']* ['e' 'E'] ['+' '-']? ['0'-'9']+ { mk lexbuf (Const (Float (lexeme lexbuf))) }
 	| "//" [^'\n' '\r']*  {
 			let s = lexeme lexbuf in
 			mk lexbuf (CommentLine (String.sub s 2 ((String.length s)-2)))
