@@ -22,6 +22,8 @@ First you need to choose which of the two build you want to compile :
 - bytecode : ocaml bytecode program, however it is not platform independant since it links some C code for ZLib bindings
 
 Then you need to configure the path where zlib.lib or zlib.a can be found.
+For example on Linux you will have to replace it by something like :
+	let zlib = "/usr/lib/libz.a"
 
 Problems :
 ----------
