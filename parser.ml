@@ -87,8 +87,12 @@ and parse_signature = parser
 
 and parse_herits = parser
 	| [< '(Kwd Extends,_); p = parse_class_path; l = parse_herits >] -> HExtends p :: l
-	| [< '(Kwd Implements,_); p = parse_class_path; l = parse_herits >] -> HImplements p :: l
+	| [< '(Kwd Implements,_); p = parse_class_path; l = parse_other_implements >] -> HImplements p :: l
 	| [< >] -> []
+
+and parse_other_implements = parser
+	| [< '(Sep,_); p = parse_class_path; l = parse_other_implements >] -> HImplements p :: l
+	| [< l = parse_herits >] -> l
 
 and parse_class_flags = parser
 	| [< '(Kwd Intrinsic,_); l = parse_class_flags >] -> HIntrinsic :: l
