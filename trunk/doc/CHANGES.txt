@@ -1,6 +1,8 @@
 2005-04-?? : 1.04
 	"for" optional first parameter and expression 
-	fixed while( o )++ i; 
+	fixed while( o )++ i;
+	added error when duplicate import statement (with same or different package)
+	added class-exist import check
 	
 2005-03-24 : 1.03
 	fixed "interface extends interface" bytecode generation
