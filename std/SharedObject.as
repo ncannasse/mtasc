@@ -4,7 +4,7 @@ intrinsic class SharedObject
 	static function getRemote(name:String,remotePath:String,persistence:Boolean):SharedObject;
 	static function deleteAll(url:String);
 	static function getDiskUsage(url:String);
-	
+
 	//function connect(myConnection:NetConnection):Boolean;
 	function send(handlerName:String):Void;
 	function flush(minDiskSpace:Number):Object;
@@ -14,6 +14,8 @@ intrinsic class SharedObject
 
 	function onStatus(infoObject:Object):Void;
 	function onSync(objArray:Array):Void;
+
+	function clear() : Void;
 
 	var data:Object;
 }
