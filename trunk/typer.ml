@@ -435,7 +435,7 @@ and type_field ctx t f p =
 		if not (is_dynamic t) then error (Custom (s_type_decl (match t with Static c -> Class c | _ -> t) ^ " have no " ^ (match t with Static _ -> "static " | _ -> "") ^ "field " ^ f)) p;
 		Dyn
 	| Some f ->
-		if f.f_public = IsPrivate then (match t with Class c | Static c when c != ctx.current -> error (Custom ("Cannot access private field " ^ f.f_name)) p | _ -> ());
+		if f.f_public = IsPrivate then (match t with Class c | Static c when c.path <> ctx.current.path -> error (Custom ("Cannot access private field " ^ f.f_name)) p | _ -> ());
 		f.f_type
 
 let rec type_binop ctx op v1 v2 p =
