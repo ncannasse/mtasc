@@ -409,7 +409,8 @@ let rec resolve_package ctx v (p : string list) pos =
 					let cpath = List.rev l , x in
 					try
 						let cl = !load_class_ref ctx cpath pos in
-						set_eval v (access cl.path (List.rev acc));
+						let vv = access cl.path (List.rev acc) in
+						set_eval v vv;
 						Static cl , acc
 					with
 						Error (Class_not_found p,_) when p = cpath -> 
@@ -521,8 +522,8 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		let t = (match type_field ctx t f p with
 		| Package pk when not in_field -> resolve_package ctx e pk p
 		| t -> t) in
-		(match v with
-		| EStatic p , pos -> 
+		(match e with
+		| EField ((EStatic p , pos) as v,_) , _ -> 
 			let rec loop cl =
 				if Hashtbl.mem cl.statics f then
 					cl.path
@@ -532,9 +533,8 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 					loop cl.super
 			in
 			let p = loop (!load_class_ref ctx p pos) in
-			set_eval v (EStatic p)
-		| _ -> ()
-		);
+			set_eval v (EStatic p);
+		| _ -> ());
 		t
 	| EStatic cpath ->
 		let c = resolve_path ctx cpath p in
@@ -551,7 +551,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 	| ECall ((EConst (Ident "super"),_),args) ->
 		if not ctx.in_constructor then error (Custom "Super constructor can only be called in class constructor") p;
 		let args = List.map (type_val ctx) args in
-		(match resolve (Class ctx.current.super) (snd ctx.current.super.path) with
+		(match ctx.current.super.constructor with
 		| None -> ()
 		| Some t ->
 			unify (Function (args,Void)) t.f_type p);
