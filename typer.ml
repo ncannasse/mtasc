@@ -162,6 +162,8 @@ let rec unify ta tb p =
 		in
 		loop cl1
 	| Static _, Class c when c.super == c -> ()
+	| Function _ , Class { path = ([],"Function") }
+	| Class { path = ([],"Function") } , Function _ -> ()
 	| _ , _ ->
 		error (Cannot_unify (ta,tb)) p
 
