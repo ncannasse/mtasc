@@ -100,6 +100,7 @@ let name = ['A' - 'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
 
 rule token = parse
 	| eof { mk lexbuf Eof }
+	| "\239\187\191" { token lexbuf }	
 	| [' ' '\r' '\t']+ { token lexbuf } 
 	| '\n' { newline lexbuf; token lexbuf }
 	| "0x" ['0'-'9' 'a'-'f' 'A'-'F']+ { mk lexbuf (Const (Int (lexeme lexbuf))) }
@@ -110,7 +111,6 @@ rule token = parse
 			let n = (if s.[String.length s - 1] = '\r' then 3 else 2) in
 			mk lexbuf (CommentLine (String.sub s 2 ((String.length s)-n)))
 		}
-	| "->" { mk lexbuf Arrow }
 	| "++" { mk lexbuf (Unop Increment) }
 	| "--" { mk lexbuf (Unop Decrement) }
 	| "~"  { mk lexbuf (Unop NegBits) }
@@ -168,9 +168,6 @@ rule token = parse
 			let pmin = lexeme_start lexbuf in
 			let pmax = (try string lexbuf with Exit -> error Unterminated_string pmin) in
 			mk_tok (Const (String (contents()))) pmin pmax;
-		}
-	| "'" ident {
-			mk lexbuf (Quote (lexeme lexbuf))
 		}
 	| "'" {
 			reset();

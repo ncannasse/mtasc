@@ -39,6 +39,7 @@ type context = {
 	classes : (type_path,class_context) Hashtbl.t;
 	in_static : bool;
 	in_lambda : bool;
+	in_constructor : bool;
 	locals : (string,local) Hashtbl.t;
 	mutable frame : int;
 	mutable inumber : type_decl;
@@ -187,6 +188,7 @@ let rec unify ta tb p =
 	match ta , tb with
 	| Dyn , x | x , Dyn when x <> Void -> ()
 	| Void , Void -> ()
+	| Static c , Function _ -> ()
 	| Function (args1,r1) , Function (args2,r2) ->
 		let rec loop a1 a2 = 
 			match a1 , a2 with
@@ -365,6 +367,14 @@ and type_val ctx ((v,p) as e) =
 	| EArrayDecl vl ->
 		List.iter (fun v -> no_void (type_val ctx v) (pos v)) vl;
 		Class (t_array ctx)
+	| ECall ((EConst (Ident "super"),_),args) ->
+		if not ctx.in_constructor then error (Custom "Super constructor can only be called in class constructor") p;
+		let args = List.map (type_val ctx) args in
+		(match resolve (Class ctx.current.super) (snd ctx.current.super.path) with
+		| None -> ()
+		| Some t ->
+			unify (Function (args,Void)) t.f_type p);
+		Void
 	| ECall (v,args) ->
 		let t = type_val ctx v in
 		(match t with
@@ -478,6 +488,7 @@ let type_function ?(lambda=false) ctx clctx f p =
 				current = clctx;
 				locals = if lambda then ctx.locals else Hashtbl.create 0;
 				in_static = (f.fstatic = IsStatic);
+				in_constructor = (f.fstatic = IsMember && f.fname = clctx.name);
 				in_lambda = lambda;
 		} in
 		let fr = new_frame ctx in
@@ -562,8 +573,10 @@ let type_file ctx req_path file el =
 			if t <> req_path then error (Class_name_mistake req_path) p;
 			if !clctx <> None then assert false;
 			clctx := Some (type_class ctx t hl e imports file true)
-		| EImport p ->
-			Hashtbl.add imports (snd p) p
+		| EImport (p,Some name) ->
+			Hashtbl.add imports name (p,name)
+		| EImport (p,None) ->
+			assert false
 	) el;
 	!clctx
 
@@ -636,6 +649,7 @@ let create cpath =
 		classes = Hashtbl.create 0;
 		in_static = true;
 		in_lambda = false;
+		in_constructor = false;
 		returns = Void;
 		locals = Hashtbl.create 0;
 		frame = 0;

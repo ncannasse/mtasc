@@ -87,6 +87,7 @@ try
 	let input = ref None in
 	let output = ref None in
 	let time = Sys.time() in
+	let keep = ref false in
 	Plugin.class_path := [base_path ^ "std/"; base_path;""];
 	let args_spec = [
 		("-i",Arg.String (fun f -> input := Some f),"<file> : input SWF");
@@ -94,6 +95,7 @@ try
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
+		("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
 	] @ !Plugin.options in
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
 	if !files = [] then begin
@@ -106,7 +108,7 @@ try
 			ignore(Typer.load_class typer path Expr.null_pos);
 		) (List.rev !files);
 		Typer.finalize typer;
-		(match !output with None -> () | Some f -> GenSwf.generate !input f true (Typer.exprs typer));
+		(match !output with None -> () | Some f -> GenSwf.generate !input f ~keep:!keep ~compress:true (Typer.exprs typer));
 		if !Plugin.verbose then print_endline ("Time spent : " ^ string_of_float (Sys.time() -. time));
 		List.iter (fun f -> f typer) !Plugin.calls;
 	end;

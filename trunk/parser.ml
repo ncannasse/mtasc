@@ -52,7 +52,8 @@ let rec	parse_code = parser
 	| [< e = parse_signature; el = parse_code >] -> e :: el
 
 and parse_signature = parser
-	| [< '(Kwd Import,p1); p = parse_class_path >] -> EImport p , p1
+	| [< '(BkOpen,_); _ = parse_metadata; s = parse_signature >] -> s
+	| [< '(Kwd Import,p1); p , w = parse_import >] -> EImport (p,w) , p1
 	| [< '(Kwd Interface,p1); path = parse_class_path; herits = parse_herits; '(BrOpen,p); el , p2 = parse_class true >] -> 
 		EInterface (path,herits,(EBlock el,punion p p2)) , punion p1 p2
 	| [< flags = parse_class_flags; '(Kwd Class,p); path = parse_class_path; herits = parse_herits; '(BrOpen,op); s >] -> 
@@ -72,6 +73,7 @@ and parse_class_flags = parser
 and parse_class interf = parser
 	| [< '(BrClose,p) >] -> [] , p
 	| [< '(Next,_); n = parse_class interf >] -> n
+	| [< '(BkOpen,_); _ = parse_metadata; i = parse_class interf >] -> i
 	| [< flags = parse_field_flags IsMember IsPublic; f = parse_class_field flags interf; fl , p = parse_class interf >] -> f :: fl , p
 
 and parse_field_flags stat pub = parser
@@ -229,6 +231,15 @@ and parse_class_path = parser
 	| [< '(Const (Ident name),_); '(Dot,_); path , cname = parse_class_path  >] -> name :: path , cname
 	| [< '(Const (Name name),_) >] -> [] , name
 
+and parse_import = parser
+	| [< '(Dot,_); p = parse_import >] -> p
+	| [< '(Const (Ident name),_); p , n = parse_import >] -> name :: p , n
+	| [< '(Const (Name name),_); >] -> [] , Some name
+	| [< '(Binop OpMult,_); >] -> [] , None
+
+and parse_metadata = parser
+	| [< '(BkClose,_) >] -> ()
+	| [< _ ; () = parse_metadata >] -> ()
 
 let parse code file =
 	let old = Lexer.save() in
