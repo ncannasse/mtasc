@@ -51,6 +51,7 @@ and class_context = {
 	statics : (string,class_field) Hashtbl.t;
 	mutable super : class_context;
 	mutable implements : class_context list;
+	mutable constructor : class_field option;
 }
 
 type local = {
@@ -582,7 +583,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		let args = List.map (type_val ctx) vl in
 		(match type_val ctx v with
 		| Static cl ->
-			(match resolve (Class cl) cl.name with
+			(match cl.constructor with
 			| None -> ()
 			| Some t ->
 				if t.f_public = IsPrivate && not (is_super cl ctx.current) then error (Custom "Cannot call private constructor") p;
@@ -709,8 +710,12 @@ let rec type_class_fields ctx clctx (e,p) =
 		) vl
 	| EFunction f -> 
 		let t = Function (List.map (fun (_,t) -> t_opt ctx p t) f.fargs , ret_opt ctx p f) in
-		let st = (if f.fname = snd clctx.path then IsStatic else f.fstatic) in
-		add_class_field ctx clctx f.fname st f.fpublic f.fgetter t p;
+		if f.fname = snd clctx.path then begin
+			match clctx.constructor with
+			| None -> clctx.constructor <- Some { f_name = f.fname;	f_type = t; f_static = IsMember; f_public = f.fpublic; f_pos = null_pos }
+			| Some _ -> error (Custom "Duplicate constructor") p;
+		end else
+			add_class_field ctx clctx f.fname f.fstatic f.fpublic f.fgetter t p;
 		if f.fexpr <> None then add_finalizer ctx (fun () -> ignore(type_function ctx clctx f p));
 	| _ ->
 		assert false
@@ -726,6 +731,7 @@ let type_class ctx cpath herits e imports file interf native s =
 		dynamic = List.exists ((=) HDynamic) herits;
 		fields = Hashtbl.create 0;
 		statics = Hashtbl.create 0;
+		constructor = None;
 		super = clctx;
 		implements = [];
 		imports = imports;
