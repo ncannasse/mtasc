@@ -20,6 +20,7 @@ intrinsic class TopLevel {
 
 	// private members are not stored into _global, they need special compilation opcodes
 	
+	private static function eval( e : String );
 	private static function getURL(url:String,target:String,vars:String):Void;
 	private static function getTimer():Number;
 	private static function random( n : Number ) : Number;
