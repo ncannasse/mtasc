@@ -587,7 +587,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 			| None -> ()
 			| Some t ->
 				if t.f_public = IsPrivate && not (is_super cl ctx.current) then error (Custom "Cannot call private constructor") p;
-				unify (Function (args,Void)) t.f_type p);
+				unify (Function (args,Dyn)) t.f_type p);
 			Class cl
 		| Dyn ->
 			Dyn
