@@ -1,6 +1,8 @@
 2004-11-XX : beta5 / 1.0 ?
 	fixed back the Export name to "MTASC" (causing problem with -keep)
 	fixed member variable declaration with init value
+	fixed multivariable ops
+	added delete call without parenthesis
 
 2004-11-09 : beta4
 	support for "arguments"
