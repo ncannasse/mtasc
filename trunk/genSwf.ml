@@ -889,17 +889,16 @@ let generate_class_code ctx clctx =
 		generate_function ~constructor:true ctx f);
 	write ctx (ASetReg 0);
 	setvar ctx k;
-	push ctx [VReg 0; VStr "prototype"];
-	getvar ctx VarObj;
-	write ctx (ASetReg 1);
-	write ctx APop;
 	(match Class.superclass clctx with
 	| None -> ()
 	| Some csuper ->
 		push ctx [VReg 0];
-		let k = generate_access ctx (EStatic (Class.path csuper),null_pos) in 
-		getvar ctx k;
+		getvar ctx (generate_access ctx (EStatic (Class.path csuper),null_pos));
 		write ctx AExtends);
+	push ctx [VReg 0; VStr "prototype"];
+	getvar ctx VarObj;
+	write ctx (ASetReg 1);
+	write ctx APop;
 	let getters = Hashtbl.create 0 in
 	List.iter (fun f ->
 		match f.fexpr with
@@ -1026,30 +1025,33 @@ let generate file ~compress exprs =
 	let ch = IO.output_channel (open_out_bin file) in
 	let found = ref false in
 	let curf = ref !frame in
-	let rec loop = function
+	let rec loop acc = function
 		| [] ->
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
-			[]
+			List.rev acc
 		| ({ tdata = TShowFrame } as x) :: l ->
 			if !found || !curf > 1 then begin
 				curf := !curf - 1;
-				x :: loop l
+				List.rev (x :: acc) @ loop [] l
 			end else begin
 				found := true;
 				let clip_id = 0xFFFF in
 				tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [] }) ::
-				tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.MTASC" }]) ::
+				tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.Test" }]) ::
 				tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
-				x :: loop l
+				List.rev (x :: acc) @ loop [] l
 			end
 		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
 			(not !keep || e = "__Packages.MTASC") &&
 			String.length e > 11 &&
-			String.sub e 0 11 = "__Packages." -> loop l
+			String.sub e 0 11 = "__Packages." ->
+				loop acc l
+		| { tdata = TDoInitAction _ } as x :: l ->
+			loop (x :: acc) l
 		| x :: l ->
-			x :: loop l
+			x :: loop acc l
 	in
-	Swf.write ch (header,loop data);
+	Swf.write ch (header,loop [] data);
 	IO.close_out ch
 
 let make_header s =
