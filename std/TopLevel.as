@@ -8,7 +8,7 @@ intrinsic class TopLevel {
 	static function unescape(value:String):String;
 	static function parseInt(value:String,radix:Number):Number;
 	static function parseFloat(value:String):Number;
-	static function trace(value:String):Void;
+	static function trace(value):Void;
 	static function updateAfterEvent():Void;
 	static function isNaN(value:Object):Boolean;
 	static function isFinite(value:Object):Boolean;
