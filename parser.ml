@@ -245,7 +245,7 @@ and parse_for p c = parser
 
 and parse_for_conds = parser
 	| [< '(Sep,_); e = parse_expr; l = parse_for_conds >] -> e :: l
-	| [< >] -> []
+	| [< '(Next,_) >] -> []
 
 and parse_args = parser
 	| [< '(Const (Ident name),_); t = parse_type_option; al , p = parse_args >] -> (name , t) :: al , p
