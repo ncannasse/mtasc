@@ -151,6 +151,7 @@ and parse_eval = parser
 			fpublic = IsPublic;
 			fexpr = Some e;
 		} , punion p1 (pos e)) >] -> v
+	| [< '(Const (Ident "throw"),p1); v = parse_eval; >] -> ECall ((EConst (Ident "throw"),p1),[v]) , punion p1 (pos v)
 	| [< '(Const (Ident "delete"),p1); e = parse_delete (EConst (Ident "delete"),p1) >] -> e
 	| [< '(Const (Ident "typeof"),p1); e = parse_delete (EConst (Ident "typeof"),p1) >] -> e
 	| [< '(Const (Ident "new"),p1); v, p2 = parse_eval; s >] ->
