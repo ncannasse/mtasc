@@ -7,7 +7,7 @@ intrinsic dynamic class Array
 	static var NUMERIC:Number;
 
 	var length:Number;
-	
+
 	function push(value : Object):Number;
 	function pop():Object;
 	function concat(value:Object):Array;
@@ -17,7 +17,7 @@ intrinsic dynamic class Array
 	function join(delimiter:String):String;
 	function splice(startIndex:Number, deleteCount:Number, value:Object):Array;
 	function toString():String;
-	function sort(compare : Function, options: Number):Array;
+	function sort(compare : Object, options: Number):Array;
 	function reverse():Void;
 	function sortOn(key, options: Number):Array;
 }
