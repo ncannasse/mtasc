@@ -177,8 +177,8 @@ and parse_eval_next e = parser
 	| [< >] -> e
 
 and parse_delete v = parser
-	| [< '(POpen,_); e = parse_eval; '(PClose,p2) >] -> ECall (v , [e]) , punion (pos v) p2
-	| [< e = parse_eval >] -> ECall (v , [e]) , punion (pos e) (pos v)
+	| [< '(POpen,_); e = parse_eval; '(PClose,p2); e = parse_eval_next (ECall (v , [e]) , punion (pos v) p2) >] -> e
+	| [< e = parse_eval; e = parse_eval_next (ECall (v , [e]) , punion (pos e) (pos v)) >] -> e
 	| [< e = parse_eval_next v >] -> e 
 
 and parse_catches = parser
