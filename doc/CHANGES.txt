@@ -1,3 +1,8 @@
+2004-12-?? : beta8
+	private methods can be called from childs
+	added "main" call by default and "-nomain"
+	fixed super calls without superclass failure
+
 2004-12-08 : beta7
 	released restriction on super
 	fixed imports in lambdas
