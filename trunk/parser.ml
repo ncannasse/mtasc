@@ -153,7 +153,10 @@ and parse_eval = parser
 		} , punion p1 (pos e)) >] -> v
 	| [< '(Const (Ident "delete"),p1); e = parse_delete (EConst (Ident "delete"),p1) >] -> e
 	| [< '(Const (Ident "typeof"),p1); e = parse_delete (EConst (Ident "typeof"),p1) >] -> e
-	| [< '(Const (Ident "new"),p1); p = parse_class_path; e = parse_new (EStatic p,p1) p1 >] -> e
+	| [< '(Const (Ident "new"),p1); v, p2 = parse_eval; s >] ->
+		(match v with
+		| ECall (v,args) -> parse_eval_next (ENew (v,args), punion p1 p2) s
+		| _ -> parse_eval_next (ENew ((v,p2),[]), punion p1 p2) s)
 	| [< '(Const c,p); e = parse_eval_next (EConst c,p)  >] -> e
 	| [< '(POpen,p1); e = parse_eval; '(PClose,p2); e = parse_eval_next (EParenthesis e , punion p1 p2) >] -> e
 	| [< '(BrOpen,p1); el, p2 = parse_field_list; e = parse_eval_next (EObjDecl el, punion p1 p2) >] -> e
@@ -175,9 +178,6 @@ and parse_eval_next e = parser
 and parse_delete v = parser
 	| [< e = parse_eval >] -> ECall (v , [e]) , punion (pos e) (pos v)
 	| [< e = parse_eval_next v >] -> e 
-
-and parse_new e p1 = parser
-	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ENew (e,args), punion p1 p2) >] -> e	
 
 and parse_catches = parser
 	| [< '(Kwd Catch,_); '(POpen,_); '(Const (Ident name),_); t = parse_type_option; '(PClose,_); e = parse_expr; l = parse_catches >] -> (name, t, e) :: l

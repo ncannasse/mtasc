@@ -584,10 +584,12 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 			(match resolve (Class cl) cl.name with
 			| None -> ()
 			| Some t ->
-				if t.f_public = IsPrivate && cl != ctx.current then error (Custom "Cannot call private constructor") p;
+				if t.f_public = IsPrivate && not (is_super cl ctx.current) then error (Custom "Cannot call private constructor") p;
 				unify (Function (args,Void)) t.f_type p);
 			Class cl
-		| Dyn ->			
+		| Dyn ->
+			Dyn
+		| Class cl when is_function cl ->
 			Dyn
 		| t ->
 			error (Custom ("Invalid type : " ^ s_type_decl t ^ " for new call")) p)
