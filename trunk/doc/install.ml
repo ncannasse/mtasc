@@ -51,14 +51,16 @@ let modules l ext =
 
 ;;
 
-let sourceforge = ":pserver:anonymous:@cvs.sourceforge.net:/cvsroot/ocaml-lib" in
-let motiontwin = ":pserver:anonymous:@cvs.motion-twin.com:/cvsroot" in
+let sourceforge = ":pserver:anonymous@cvs.sourceforge.net:/cvsroot/ocaml-lib" in
+let motiontwin = ":pserver:anonymous@cvs.motion-twin.com:/cvsroot" in
 
 let download () =
 
+	msg "*** Please hit enter on login (empty password) ***";
 	cvs sourceforge "login";
 	cvs sourceforge "co extlib-dev";
 
+	msg "*** Please hit enter on login (empty password) ***";
 	cvs motiontwin "login";
 	cvs motiontwin "co ocaml/mtasc";
 	cvs motiontwin "co ocaml/swflib";
