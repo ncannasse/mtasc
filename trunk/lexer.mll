@@ -94,9 +94,7 @@ let mk_ident lexbuf =
 
 }
 
-let ident2 = ['A' - 'Z'] ['A'-'Z' '0'-'9' '_']+
-let ident = ['_' '$' 'a'-'z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
-let name = ['A' - 'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
+let ident = ['_' '$' 'a'-'z' 'A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
 
 rule token = parse
 	| eof { mk lexbuf Eof }
@@ -175,11 +173,7 @@ rule token = parse
 			let pmax = (try string2 lexbuf with Exit -> error Unterminated_string pmin) in
 			mk_tok (Const (String (contents()))) pmin pmax;
 		}
-	| "E" | "NaN" | "Infinity" { mk_ident lexbuf }
-	| "XML" | "URI" { mk lexbuf (Const (Name (lexeme lexbuf))) }
 	| ident { mk_ident lexbuf }
-	| ident2 { mk_ident lexbuf }
-	| name { mk lexbuf (Const (Name (lexeme lexbuf))) }
 	| _ { error (Invalid_character (lexeme_char lexbuf 0)) (lexeme_start lexbuf) }
 
 and comment = parse

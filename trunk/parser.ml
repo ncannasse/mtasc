@@ -84,19 +84,15 @@ and parse_field_flags stat pub = parser
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); fname = parse_function_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); '(Const (Ident name),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
-			fname = fname;
+			fname = name;
 			fargs = args;
 			ftype = t;
 			fstatic = stat;
 			fpublic = pub;
 			fexpr = if interf then None else Some (parse_expr s);
 		} , punion p1 p2
-
-and parse_function_name = parser
-	| [< '(Const (Ident fname),_); >] -> fname
-	| [< '(Const (Name fname),_); >] -> fname
 
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
@@ -121,7 +117,7 @@ and parse_eval = parser
 			fpublic = IsPublic;
 			fexpr = Some e;
 		} , punion p1 (pos e)) >] -> v
-	| [< '(Const (Ident "new"),p1); p = parse_class_path; e = parse_new p p1 >] -> e
+	| [< '(Const (Ident "new"),p1); p = parse_class_path; e = parse_new (EStatic p,p1) p1 >] -> e
 	| [< '(Const c,p); e = parse_eval_next (EConst c,p)  >] -> e
 	| [< '(POpen,p1); e = parse_eval; '(PClose,p2); e = parse_eval_next (EParenthesis e , punion p1 p2) >] -> e
 	| [< '(BrOpen,p1); el, p2 = parse_field_list; e = parse_eval_next (EObjDecl el, punion p1 p2) >] -> e
@@ -132,16 +128,12 @@ and parse_eval = parser
 and parse_eval_next e = parser
 	| [< '(BkOpen,_); e2 = parse_eval; '(BkClose,p2); e = parse_eval_next (EArray (e,e2) , punion (pos e) p2) >] -> e
 	| [< '(Binop op,_); e2 = parse_eval; >] -> make_binop op e e2
-	| [< '(Dot,_); e = parse_field_access e >] -> e
+	| [< '(Dot,_); '(Const (Ident field),p2); e = parse_eval_next (EField (e,field), punion (pos e) p2) >] -> e
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
 	| [< '(Unop op,p2) when is_postfix op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
 	| [< '(Const (Ident "instanceof"),p); v = parse_eval; e = parse_eval_next (ECall ((EConst (Ident "instanceof"),p),[e;v]),punion (pos e) (pos v)) >] -> e
 	| [< >] -> e
-
-and parse_field_access e = parser
-	| [< '(Const (Ident field),p2); e = parse_eval_next (EField (e,field), punion (pos e) p2) >] -> e
-	| [< '(Const (Name cl),p2); e = parse_eval_next (EStatic (make_path e,cl), punion (pos e) p2) >] -> e
 
 and parse_new e p1 = parser
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ENew (e,args), punion p1 p2) >] -> e	
@@ -228,14 +220,19 @@ and parse_type_option = parser
 	| [< >] -> None
 
 and parse_class_path = parser
-	| [< '(Const (Ident name),_); '(Dot,_); path , cname = parse_class_path  >] -> name :: path , cname
-	| [< '(Const (Name name),_) >] -> [] , name
+	| [< '(Const (Ident name),_); p = parse_class_path2 name >] -> p
+
+and parse_class_path2 name = parser
+	| [< '(Dot,_); p , n = parse_class_path >] -> name :: p , n
+	| [< >] -> [] , name
 
 and parse_import = parser
-	| [< '(Dot,_); p = parse_import >] -> p
-	| [< '(Const (Ident name),_); p , n = parse_import >] -> name :: p , n
-	| [< '(Const (Name name),_); >] -> [] , Some name
+	| [< '(Const (Ident name),_); p = parse_import2 name >] -> p
 	| [< '(Binop OpMult,_); >] -> [] , None
+
+and parse_import2 name = parser
+	| [< '(Dot,_); p , n = parse_import >] -> name :: p , n
+	| [< >] -> [] , Some name
 
 and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()

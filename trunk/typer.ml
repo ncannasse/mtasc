@@ -6,6 +6,7 @@ type type_decl =
 	| Class of class_context
 	| Static of class_context
 	| Function of type_decl list * type_decl
+	| Package of string list
 
 and class_field = {
 	f_name : string;
@@ -71,6 +72,7 @@ let rec s_type_decl = function
 	| Static c -> "#" ^ s_type_path c.path
 	| Function ([],r) -> "Void -> " ^ s_type_decl r
 	| Function (args,r) -> String.concat " -> " (List.map s_type_decl args) ^ " -> " ^ s_type_decl r
+	| Package l -> String.concat "." l
 
 let error_msg = function
 	| Class_not_found p -> "class not found : " ^ s_type_path p
@@ -158,7 +160,7 @@ let add_class_field ctx clctx fname stat pub ft p =
 	}
 
 let is_dynamic = function
-	| Dyn | Function _ -> true
+	| Dyn | Function _ | Package _ -> true
 	| Void | Static _ -> false
 	| Class c -> c.dynamic
 
@@ -216,6 +218,14 @@ let rec resolve t fname =
 	| Void
 	| Dyn
 	| Function _ -> None
+	| Package p ->
+		Some {
+			f_name = fname;
+			f_type = Package (p @ [fname]);
+			f_static = IsMember;
+			f_public = IsPublic;
+			f_pos = null_pos;
+		}
 	| Static c -> 
 		(try Some (Hashtbl.find c.statics fname) with Not_found -> if c.super == c then None else resolve (Static c.super) fname)
 	| Class c -> 
@@ -252,7 +262,7 @@ and type_ident ctx name e p =
 						if c.super == c then None else loop c.super
 			in
 			match loop ctx.current with
-			| Some (c,f) -> 
+			| Some (c,f) ->
 				set_eval e (EField ((EStatic c.path,p),name));
 				f.f_type
 			| None -> 
@@ -261,9 +271,7 @@ and type_ident ctx name e p =
 					if f.f_public = IsPublic then set_eval e (EField ((EConst (Ident "_global"),p),name));
 					f.f_type
 				| None -> 
-					if not ctx.current.dynamic then error (Custom ("Unknown identifier " ^ name)) p;
-					set_eval e (EField ((EConst (Ident "this"),p),name));
-					Dyn
+					Package [name]
 
 let type_constant ctx c e p =
 	match c with
@@ -288,8 +296,55 @@ let type_constant ctx c e p =
 		end
 	| Ident name ->
 		type_ident ctx name e p
-	| Name _ ->
-		assert false
+
+let rec resolve_package ctx v (p : string list) pos =
+	match p with
+	| [] -> assert false
+	| cname :: fields ->
+		let rec access p = function
+			| [] -> EStatic p
+			| x :: l -> EField ((access p l , pos), x)
+		in
+		let rec search_package p =
+			let rec loop acc = function
+				| [] -> raise Exit
+				| x :: l ->
+					let cpath = List.rev l , x in
+					try
+						let cl = !load_class_ref ctx cpath pos in
+						set_eval v (access cl.path (List.rev acc));
+						Static cl , acc
+					with
+						Error (Class_not_found p,_) when p = cpath -> 
+							loop (x :: acc) l
+			in
+			let t , fields = loop [] (List.rev p) in
+			let rec loop t = function
+				| [] -> t
+				| f :: l ->
+					loop (type_field ctx t f pos) l
+			in
+			loop t fields
+		in
+		let rec loop = function
+			| [] ->	error (Custom ("Unknown class " ^ String.concat "." p)) pos
+			| p :: l ->
+				try 
+					search_package p
+				with
+					Exit -> loop l
+		in
+		let p2 , n = resolve_path ctx.current ([],cname) in
+		loop [p2 @ n :: fields] (* can add imports wildcards later *)
+
+and type_field ctx t f p =
+	match resolve t f with
+	| None -> 
+		if not (is_dynamic t) then error (Custom (s_type_decl (match t with Static c -> Class c | _ -> t) ^ " have no " ^ (match t with Static _ -> "static " | _ -> "") ^ "field " ^ f)) p;
+		Dyn
+	| Some f ->
+		if f.f_public = IsPrivate then (match t with Class c | Static c when c != ctx.current -> error (Custom ("Cannot access private field " ^ f.f_name)) p | _ -> ());
+		f.f_type
 
 let rec type_binop ctx op v1 v2 p =
 	let t1 = type_val ctx v1 in
@@ -332,10 +387,12 @@ let rec type_binop ctx op v1 v2 p =
 		unify t t1 p;
 		t1
 
-and type_val ctx ((v,p) as e) =
+and type_val ?(in_field=false) ctx ((v,p) as e) =
 	match v with
-	| EConst (Name c) -> type_val ctx (EStatic ([],c),p)
-	| EConst c -> type_constant ctx c e p
+	| EConst c -> 
+		(match type_constant ctx c e p with
+		| Package pk when not in_field -> resolve_package ctx e pk p
+		| t -> t)
 	| EArray (v1,v2) -> 
 		let t = type_val ctx v1 in
 		let t2 = type_val ctx v2 in
@@ -347,15 +404,11 @@ and type_val ctx ((v,p) as e) =
 		Dyn
 	| EBinop (op,v1,v2) ->
 		type_binop ctx op v1 v2 p
-	| EField (v,s) -> 
-		let t = type_val ctx v in
-		(match resolve t s with
-		| None -> 
-			if not (is_dynamic t) then error (Custom (s_type_decl (match t with Static c -> Class c | _ -> t) ^ " have no " ^ (match t with Static _ -> "static " | _ -> "") ^ "field " ^ s)) p;
-			Dyn
-		| Some f ->
-			if f.f_public = IsPrivate then (match t with Class c | Static c when c != ctx.current -> error (Custom ("Cannot access private field " ^ s)) p | _ -> ());
-			f.f_type)
+	| EField (v,f) ->
+		let t = type_val ~in_field:true ctx v in
+		(match type_field ctx t f p with
+		| Package pk when not in_field -> resolve_package ctx e pk p
+		| t -> t)
 	| EStatic cpath ->
 		let cpath = resolve_path ctx.current cpath in
 		Static (!load_class_ref ctx cpath p)
@@ -407,15 +460,20 @@ and type_val ctx ((v,p) as e) =
 	| EUnop (_,_,v) ->
 		unify (type_val ctx v) ctx.inumber (pos v);
 		ctx.inumber
-	| ENew (cpath,vl) ->
-		let cl = !load_class_ref ctx (resolve_path ctx.current cpath) p in
+	| ENew (v,vl) ->
 		let args = List.map (type_val ctx) vl in
-		(match resolve (Class cl) (snd cpath) with
-		| None -> ()
-		| Some t ->
-			if t.f_public = IsPrivate && cl != ctx.current then error (Custom "Cannot call private constructor") p;
-			unify (Function (args,Void)) t.f_type p);
-		Class cl
+		(match type_val ctx v with
+		| Static cl ->
+			(match resolve (Class cl) cl.name with
+			| None -> ()
+			| Some t ->
+				if t.f_public = IsPrivate && cl != ctx.current then error (Custom "Cannot call private constructor") p;
+				unify (Function (args,Void)) t.f_type p);
+			Class cl
+		| Dyn ->			
+			Dyn
+		| t ->
+			error (Custom ("Invalid type : " ^ s_type_decl t ^ " for new call")) p)
  	| ELambda f ->
 		!type_function_ref ~lambda:true ctx (t_object ctx) f p
 
@@ -575,8 +633,8 @@ let type_file ctx req_path file el =
 			clctx := Some (type_class ctx t hl e imports file true)
 		| EImport (p,Some name) ->
 			Hashtbl.add imports name (p,name)
-		| EImport (p,None) ->
-			assert false
+		| EImport (pk,None) ->
+			error (Custom "import .* is not currently supported") p
 	) el;
 	!clctx
 

@@ -65,7 +65,6 @@ type constant =
 	| Float of string
 	| String of string
 	| Ident of string
-	| Name of string
 
 type token =
 	| Eof
@@ -125,15 +124,15 @@ and eval_def =
 	| EArray of eval * eval
 	| EBinop of binop * eval * eval
 	| EField of eval * string
-	| EStatic of type_path
 	| EParenthesis of eval
 	| EObjDecl of (string * eval) list
 	| EArrayDecl of eval list
 	| ECall of eval * eval list
-	| ENew of type_path * eval list
+	| ENew of eval * eval list
 	| EUnop of unop * unop_flag * eval
 	| EQuestion of eval * eval * eval
 	| ELambda of func
+	| EStatic of type_path
 
 and eval = eval_def * pos
 
@@ -202,7 +201,6 @@ let s_constant = function
 	| Float s -> s
 	| String s -> "\"" ^ s_escape s ^ "\""
 	| Ident s -> s
-	| Name s -> s
 	
 let s_keyword = function
 	| Function -> "function"

@@ -186,11 +186,8 @@ and generate_class_static_refs h gen clctx v =
 			loop v2
 		| EStatic p ->
 			check p;
-		| ENew (p,vl) ->
-			List.iter loop vl;
-			check p;
-		| EConst (Name p) ->
-			check ([],p)
+		| ENew (v,vl) ->
+			List.iter loop (v :: vl)
 		| EConst _ 
 		| ELambda _ ->
 			()
