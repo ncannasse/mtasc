@@ -85,7 +85,7 @@ let stack_delta = function
 	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
 	| AEnum2 -> -1
-	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf -> 0
+	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf | ATargetPath -> 0
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
 
@@ -566,6 +566,9 @@ and generate_call ?(newcall=false) ctx v vl =
 		write ctx AEval
 	| EConst (Ident "getTimer"), [] ->
 		write ctx AGetTimer
+	| EConst (Ident "targetPath") , [v] ->
+		generate_val ctx v;
+		write ctx ATargetPath
 	| EConst (Ident ("getURL" as x)) , params
 	| EConst (Ident ("loadMovie" as x)) , params
 	| EConst (Ident ("loadVariables" as x)) , params ->

@@ -1,4 +1,13 @@
+TODO:
+	import wildcards
+	support for "arguments"
+	commandline + doc to compile a full package
+	fix problem when specifying AS2 classes for MC directly into Flash IDE.
 
+2004-11-XX : beta4
+	fixed bug when a class reference itself : lookup was member constructor
+	support for targetPath
+	
 2004-11-03 : beta3
 	checks that implements an interface and extends a class
 	added physical (in)equality operation
