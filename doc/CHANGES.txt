@@ -1,3 +1,6 @@
+2004-12-?? : beta7
+	fixed imports in lambdas
+	
 2004-11-22 : beta6
 	fixed stack overflow in parsing metadata
 	added missing intrinsic headers
