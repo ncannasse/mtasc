@@ -49,6 +49,7 @@ type context =  {
 	mutable continue_pos : int;
 	mutable opt_push : bool;
 	mutable curmethod : string;
+	mutable forins : int;
 }
 
 type push_style =
@@ -452,10 +453,12 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 		generate_ident ctx s p
 	| EField (v,s) ->
 		generate_val ctx v;
+		prerr_endline (" --> " ^ s);
 		push ctx [VStr s];
 		VarObj
 	| EStatic (p,s) ->
 		let k = generate_package ~fast:true ctx p in
+		prerr_endline (" * " ^ s);
 		push ctx [VStr s];
 		k
 	| EArray (va,vb) ->
@@ -716,6 +719,14 @@ let generate_local_var ctx (vname,_,vinit) =
 			setvar ctx (VarReg r)
 	end
 
+let gen_forins ctx =
+	for i = 1 to ctx.forins do
+		push ctx [VNull];
+		write ctx AEqual;
+		write ctx ANot;
+		write ctx (ACondJump (-4));
+	done
+
 let rec generate_expr ctx (e,p) =
 	match e with
 	| EFunction _ ->
@@ -760,6 +771,7 @@ let rec generate_expr ctx (e,p) =
 		ctx.breaks <- [];
 		ctx.continue_pos <- start_pos;
 		ctx.opt_push <- false;
+		ctx.forins <- ctx.forins + 1;
 		write ctx (ASetReg 0);
 		push ctx [VNull];
 		write ctx AEqual;
@@ -780,13 +792,9 @@ let rec generate_expr ctx (e,p) =
 		do_jmp ctx start_pos;
 		let has_breaks = (ctx.breaks <> []) in
 		generate_breaks ctx old_breaks;
-		if has_breaks then begin			
-			push ctx [VNull];
-			write ctx AEqual;
-			write ctx ANot;
-			write ctx (ACondJump (-4));
-		end;
+		if has_breaks then gen_forins ctx;
 		jump_end();
+		ctx.forins <- ctx.forins - 1;
 		ctx.continue_pos <- old_continue;
 		block_end()
 	| EIf (v,e,eelse) ->
@@ -827,11 +835,13 @@ let rec generate_expr ctx (e,p) =
 	| EContinue ->
 		do_jmp ctx ctx.continue_pos
 	| EReturn None ->
+		gen_forins ctx;
 		write ctx (APush [PUndefined]);
 		write ctx AReturn	
 	| EReturn (Some v) ->
+		gen_forins ctx;
 		generate_val ctx v;
-		write ctx AReturn		
+		write ctx AReturn
 	| ESwitch (v,cases,edefault) ->
 		generate_val ctx v;
 		write ctx (ASetReg 0);
@@ -929,8 +939,10 @@ let generate_function ?(constructor=false) ctx f =
 		let stack_base , old_nregs = ctx.stack , ctx.reg_count in
 		let have_super = used_in_block true "super" fexpr in
 		let reg_super = have_super || (constructor && Class.superclass ctx.current <> None) in
+		let old_forin = ctx.forins in
 		ctx.reg_count <- (if reg_super then 2 else 1);
 		if f.fname <> "" then ctx.curmethod <- f.fname;
+		ctx.forins <- 0;
 		ctx.stack <- ctx.stack + 1;
 		let args = List.map (fun (aname,_) ->
 			let r = 
@@ -954,6 +966,7 @@ let generate_function ?(constructor=false) ctx f =
 		end;
 		fdone (ctx.reg_count + 1);
 		clean_stack ctx stack_base;
+		ctx.forins <- old_forin;
 		ctx.reg_count <- old_nregs;
 		ctx.curmethod <- old_name
 
@@ -1110,6 +1123,7 @@ let generate file ~compress exprs =
 		stack_size = 0;
 		cur_block = (EBreak,null_pos);
 		breaks = [];
+		forins = 0;
 		continue_pos = 0;
 		opt_push = false;
 		curmethod = "";
