@@ -70,8 +70,7 @@ let rec s_type_decl = function
 	| Dyn -> "Any"
 	| Class c -> s_type_path c.path
 	| Static c -> "#" ^ s_type_path c.path
-	| Function ([],r) -> "Void -> " ^ s_type_decl r
-	| Function (args,r) -> String.concat " -> " (List.map s_type_decl args) ^ " -> " ^ s_type_decl r
+	| Function (args,r) -> "function (" ^ String.concat ", " (List.map s_type_decl args) ^ ") : " ^ s_type_decl r
 	| Package l -> String.concat "." l
 
 let error_msg = function
@@ -606,13 +605,16 @@ let type_class ctx cpath herits e imports file interf =
 	in
 	let spath = loop herits in
 	clctx.super <- !load_class_ref ctx spath (pos e);
+	if clctx.super.interface then error (Custom "Cannot extends an interface") (pos e);
 	let rec loop = function
 		| [] -> []
 		| HImplements cpath :: l -> cpath :: loop l
 		| _ :: l -> loop l
 	in
 	clctx.implements <- List.map (fun cpath -> 
-		!load_class_ref ctx (resolve_path clctx cpath) (pos e)
+		let c = !load_class_ref ctx (resolve_path clctx cpath) (pos e) in
+		if not c.interface then error (Custom "Cannot implements a class") (pos e);
+		c
 	) (loop herits);
 	type_class_fields ctx clctx e;
 	ctx.current <- old;
