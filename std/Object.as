@@ -6,6 +6,10 @@ dynamic intrinsic class Object
 	function hasOwnProperty(name:String):Boolean;
 	function toString():String;
 
+
+	var __proto__;
+	var constructor : Function;
+
 	static function registerClass(name:String, theClass:Object):Boolean;
 	static var prototype:Object;
 
