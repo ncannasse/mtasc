@@ -1051,6 +1051,7 @@ let to_utf8 str =
 			String.iter (fun c -> UTF8.Buf.add_char b (UChar.of_char c)) str;
 			UTF8.Buf.contents b
 
+let use_components = ref false
 let separate = ref false
 let keep = ref false
 let frame = ref 1
@@ -1174,7 +1175,9 @@ let generate file ~compress exprs =
 		| { tdata = TClip _ } :: { tdata = TExport [{ exp_name = e }] } :: { tdata = TDoInitAction _ } :: l when
 			(not !keep || e = "__Packages.MTASC") &&
 			String.length e > 11 &&
-			String.sub e 0 11 = "__Packages." ->
+			String.sub e 0 11 = "__Packages." &&
+			(not !use_components || String.length e <= 14 || String.sub e 0 14 <> "__Packages.mx.")
+			->
 				loop acc l
 		| { tdata = TDoInitAction { dia_actions = d } } as x :: l ->
 			(match DynArray.to_list d with
@@ -1191,7 +1194,8 @@ let generate file ~compress exprs =
 				(try
 					ignore(Class.getclass ctx.current cpath)
 				with
-					_ -> prerr_endline ("Warning : Missing class " ^ clname ^ " required by MovieClip " ^ mcname ^ " with registerClass"));
+				_ -> 
+					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then prerr_endline ("Warning : Missing class " ^ clname ^ " required by MovieClip " ^ mcname ^ " with registerClass"));
 			| _ -> ());
 			loop (x :: acc) l
 		| x :: l ->

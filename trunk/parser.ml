@@ -25,6 +25,8 @@ type error_msg =
 
 exception Error of error_msg * pos
 
+let use_components = ref false
+
 let error_msg = function
 	| Unexpected t -> "Unexpected "^(s_token t)
 	| Unclosed_parenthesis -> "Unclosed parenthesis"
@@ -128,11 +130,11 @@ and parse_class_field (stat,pub) interf = parser
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
 	| [< '(Kwd For,p); '(POpen,_); c = parse_expr; e = parse_for p c >] -> e
-	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr; e2 , p2 = parse_else (pos e) >] -> EIf (cond,e,e2), punion p p2
+	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr_opt; e2 , p2 = parse_else (pos e) >] -> EIf (cond,e,e2), punion p p2
 	| [< '(Kwd Return,p); v , p2 = parse_eval_option p; >] -> EReturn v , punion p p2
 	| [< '(Kwd Break,p); >] -> EBreak , p
 	| [< '(Kwd Continue,p); >] -> EContinue , p
-	| [< '(Kwd While,p1); v = parse_eval; e = parse_expr >] -> EWhile (v,e,NormalWhile) , punion p1 (pos e)
+	| [< '(Kwd While,p1); v = parse_eval; e = parse_expr_opt >] -> EWhile (v,e,NormalWhile) , punion p1 (pos e)
 	| [< '(Kwd Do,p1); e = parse_expr; '(Kwd While,_); v = parse_eval; >] -> EWhile (v,e,DoWhile) , punion p1 (pos v)
 	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el , eo, p2 = parse_switch >] -> ESwitch (v,el,eo) , punion p1 p2
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (IsMember,IsPublic,vl), punion p1 p2
@@ -169,6 +171,7 @@ and parse_eval = parser
 and parse_eval_next e = parser
 	| [< '(BkOpen,_); e2 = parse_eval; '(BkClose,p2); e = parse_eval_next (EArray (e,e2) , punion (pos e) p2) >] -> e
 	| [< '(Binop op,_); e2 = parse_eval; >] -> make_binop op e e2
+	| [< '(Const (Ident "and"),_); e2 = parse_eval; >] -> make_binop OpBoolAnd e e2
 	| [< '(Dot,_); '(Const (Ident field),p2); e = parse_eval_next (EField (e,field), punion (pos e) p2) >] -> e
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
 	| [< '(Unop op,p2) when is_postfix op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
@@ -218,8 +221,12 @@ and parse_else p = parser
 	| [< '(Kwd Else,_); e = parse_expr >] -> Some e, pos e
 	| [< >] -> None , p
 
+and parse_expr_opt = parser
+	| [< e = parse_expr >] -> e
+	| [< '(Next,p); >] -> EBlock [] , p
+
 and parse_for p c = parser
-	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr >] -> EForIn(c,v,e) , punion p p2
+	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,e) , punion p p2
 	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr >] -> EFor(c :: cl,l1,l2,e) , punion p p2
 
 and parse_for_conds = parser
@@ -299,7 +306,7 @@ and parse_getter name = parser
 
 and parse_include = parser 
 	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String _),p2) >] ->
-		print_endline ("Warning : unsupported #include in " ^ p1.pfile)
+		if not !use_components then print_endline ("Warning : unsupported #include in " ^ p1.pfile)
 
 let parse code file =
 	let old = Lexer.save() in
