@@ -164,7 +164,7 @@ let rec is_function cl =
 (* check that ta >= tb *)
 let rec unify ta tb p =
 	match ta , tb with
-	| Dyn , x | x , Dyn when x <> Void -> ()
+	| Dyn , x | x , Dyn -> ()
 	| Void , Void -> ()
 	| Function (args1,r1) , Function (args2,r2) ->
 		let rec loop a1 a2 = 
