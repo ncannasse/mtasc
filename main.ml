@@ -101,7 +101,7 @@ let read_package path =
 			| files ->
 				match List.filter (fun f -> String.ends_with (String.lowercase f) ".as") files with
 				| [] -> loop l
-				| files -> List.map (fun f -> npath ^ f) files @ loop l
+				| files -> List.map (fun f -> npath ^ f) files
 	in
 	loop !Plugin.class_path
 
