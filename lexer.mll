@@ -123,6 +123,7 @@ rule token = parse
 	| "0x" ['0'-'9' 'a'-'f' 'A'-'F']+ { mk lexbuf (Const (Int (lexeme lexbuf))) }
 	| ['0'-'9']+ { mk lexbuf (Const (Int (lexeme lexbuf))) }
 	| ['0'-'9']+ '.' ['0'-'9']* { mk lexbuf (Const (Float (lexeme lexbuf))) }
+	| '.' ['0'-'9']* { mk lexbuf (Const (Float (lexeme lexbuf))) }
 	| "//" [^'\n']*  {
 			let s = lexeme lexbuf in
 			let n = (if s.[String.length s - 1] = '\r' then 3 else 2) in
