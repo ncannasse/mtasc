@@ -136,6 +136,7 @@ and parse_expr = parser
 	| [< '(Kwd Do,p1); e = parse_expr; '(Kwd While,_); v = parse_eval; >] -> EWhile (v,e,DoWhile) , punion p1 (pos v)
 	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el , eo, p2 = parse_switch >] -> ESwitch (v,el,eo) , punion p1 p2
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (IsMember,IsPublic,vl), punion p1 p2
+	| [< '(Kwd Try,p1); e = parse_expr; c = parse_catches; f = parse_finally >] -> ETry (e,c,f) , punion p1 (pos e)
 	| [< e = parse_eval >] -> EVal e , pos e
 	| [< _ = parse_include; e = parse_expr >] -> e
 
@@ -177,6 +178,14 @@ and parse_delete v = parser
 
 and parse_new e p1 = parser
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ENew (e,args), punion p1 p2) >] -> e	
+
+and parse_catches = parser
+	| [< '(Kwd Catch,_); '(POpen,_); '(Const (Ident name),_); t = parse_type_option; '(PClose,_); e = parse_expr; l = parse_catches >] -> (name, t, e) :: l
+	| [< >] -> []
+
+and parse_finally = parser
+	| [< '(Kwd Finally,_); e = parse_expr >] -> Some e
+	| [< >] -> None
 
 and parse_expr_option p = parser
 	| [< e = parse_expr >] -> Some e , pos e

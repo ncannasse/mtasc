@@ -47,6 +47,9 @@ type keyword =
 	| Dynamic
 	| Public
 	| Private
+	| Try
+	| Catch
+	| Finally
 
 type binop =
 	| OpAdd
@@ -173,6 +176,7 @@ and expr_def =
 	| EIf of eval * expr * expr option
 	| EWhile of eval * expr * while_flag
 	| ESwitch of eval * (eval * expr) list * expr option
+	| ETry of expr * (string * type_path option * expr) list * expr option
 	| EReturn of eval option
 	| EBreak
 	| EContinue
@@ -254,6 +258,9 @@ let s_keyword = function
 	| Dynamic -> "dynamic"
 	| Private -> "private"
 	| Public -> "public"
+	| Try -> "try"
+	| Catch -> "catch"
+	| Finally -> "finally"
 
 let rec s_binop = function
 	| OpAdd -> "+"

@@ -47,7 +47,7 @@ let keywords =
 	List.iter (fun k -> Hashtbl.add h (s_keyword k) k) 
 		[Function;Class;Static;Var;If;Else;While;Do;For;
 		Break;Return;Continue;Interface;Extends;Implements;Import;
-		Switch;Case;Default;Intrinsic;Dynamic;Public;Private];
+		Switch;Case;Default;Intrinsic;Dynamic;Public;Private;Try;Catch;Finally];
 	h
 
 let init file =
