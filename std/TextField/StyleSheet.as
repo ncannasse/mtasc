@@ -1,4 +1,4 @@
-intrinsic class StyleSheet
+intrinsic class TextField.StyleSheet
 {
 	function getStyle(name:String):Object;
 	function setStyle(name:String,style:Object):Void;
