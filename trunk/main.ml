@@ -148,7 +148,8 @@ try
 		List.iter (fun f -> f typer) !Plugin.calls;
 		if !Plugin.verbose then print_endline ("Time spent : " ^ string_of_float (Sys.time() -. time));
 	end;
-with	
+with
+	| Expr.Invalid_expression p -> report ((),p) "parse error" (fun() -> "Invalid Expression")
 	| Lexer.Error (m,p) -> report (m,p) "syntax error" Lexer.error_msg
 	| Parser.Error (m,p) -> report (m,p) "parse error" Parser.error_msg
 	| Typer.Error (m,p) -> report (m,p) "type error" Typer.error_msg

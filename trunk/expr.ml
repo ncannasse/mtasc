@@ -318,3 +318,66 @@ let s_token = function
 	| Question -> "?"
 	| Sharp -> "#"
 
+exception Invalid_expression of pos
+
+let rec check_val (v,p) =
+	match v with
+	| EBinop (OpAssign,_,_)
+	| EBinop (OpAssignOp _,_,_)
+	| ECall _
+	| EUnop (Increment,_,_)
+	| EUnop (Decrement,_,_)
+	| EQuestion _
+		-> ()
+	| ENew _
+	| EConst _
+	| EArray _ 
+	| EBinop _
+	| EField _
+	| EObjDecl _
+	| EArrayDecl _
+	| EUnop _
+	| ELambda _
+	| EStatic _
+	| ECast _
+		-> raise (Invalid_expression p)
+	| EParenthesis v ->
+		check_val v
+
+let rec check_expr (e,p) =
+	match e with
+	| EVars (_,_,vl) -> ()
+	| EFunction f -> 
+		(match f.fexpr with None -> () | Some e -> check_expr e)
+	| EBlock el ->
+		List.iter check_expr el
+	| EFor (el, _ , _ , e ) ->
+		List.iter check_expr el;
+		check_expr e
+	| EForIn (_,_,e) ->
+		check_expr e
+	| EIf (_,e,eo) ->
+		check_expr e;
+		(match eo with None -> () | Some e -> check_expr e)
+	| EWhile (_,e,_) ->
+		check_expr e
+	| ESwitch (_,cl,eo) ->
+		List.iter (fun (_,e) -> check_expr e) cl;
+		(match eo with None -> () | Some e -> check_expr e)
+	| ETry (e,cl,eo) ->
+		check_expr e;
+		List.iter (fun (_,_,e) -> check_expr e) cl;
+		(match eo with None -> () | Some e -> check_expr e)
+	| EWith (_,e) ->
+		check_expr e;
+	| EReturn _
+	| EBreak
+	| EContinue -> ()		
+	| EVal v ->
+		check_val v
+
+let check_sign (s,p) = 
+	match s with
+	| EClass (_,_,e) -> check_expr e
+	| EInterface (_,_,e) -> check_expr e
+	| EImport _ -> ()
