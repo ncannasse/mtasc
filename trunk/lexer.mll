@@ -118,16 +118,16 @@ let ident = ['_' '$' 'a'-'z' 'A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
 rule token = parse
 	| eof { mk lexbuf Eof }
 	| "\239\187\191" { token lexbuf }	
-	| [' ' '\r' '\t']+ { token lexbuf } 
-	| '\n' { newline lexbuf; token lexbuf }
+	| [' ' '\t']+ { token lexbuf } 
+	| "\r\n" { newline lexbuf; token lexbuf }
+	| '\n' | '\r' { newline lexbuf; token lexbuf }
 	| "0x" ['0'-'9' 'a'-'f' 'A'-'F']+ { mk lexbuf (Const (Int (lexeme lexbuf))) }
 	| ['0'-'9']+ { mk lexbuf (Const (Int (lexeme lexbuf))) }
 	| ['0'-'9']+ '.' ['0'-'9']* { mk lexbuf (Const (Float (lexeme lexbuf))) }
 	| '.' ['0'-'9']* { mk lexbuf (Const (Float (lexeme lexbuf))) }
-	| "//" [^'\n']*  {
+	| "//" [^'\n' '\r']*  {
 			let s = lexeme lexbuf in
-			let n = (if s.[String.length s - 1] = '\r' then 3 else 2) in
-			mk lexbuf (CommentLine (String.sub s 2 ((String.length s)-n)))
+			mk lexbuf (CommentLine (String.sub s 2 ((String.length s)-2)))
 		}
 	| "++" { mk lexbuf (Unop Increment) }
 	| "--" { mk lexbuf (Unop Decrement) }
@@ -200,16 +200,14 @@ rule token = parse
 
 and comment = parse
 	| eof { raise Exit }
-	| '\r' { comment lexbuf }
-	| '\n' { newline lexbuf; store lexbuf; comment lexbuf }
+	| '\n' | '\r' | "\r\n" { newline lexbuf; store lexbuf; comment lexbuf }
 	| "*/" { lexeme_end lexbuf }
 	| '*' { store lexbuf; comment lexbuf }
 	| [^'*' '\n' '\r']+ { store lexbuf; comment lexbuf }
 
 and string = parse
 	| eof { raise Exit }
-	| '\r' { string lexbuf }
-	| '\n' { newline lexbuf; store lexbuf; string lexbuf }
+	| '\n' | '\r' | "\r\n" { newline lexbuf; store lexbuf; string lexbuf }
 	| "\\\"" { store lexbuf; string lexbuf }
 	| "\\\\" { store lexbuf; string lexbuf }
 	| '\\' { store lexbuf; string lexbuf }
@@ -218,8 +216,7 @@ and string = parse
 
 and string2 = parse
 	| eof { raise Exit }
-	| '\r' { string2 lexbuf }
-	| '\n' { newline lexbuf; store lexbuf; string2 lexbuf }
+	| '\n' | '\r' | "\r\n" { newline lexbuf; store lexbuf; string2 lexbuf }
 	| '\\' { store lexbuf; string2 lexbuf }
 	| "\\\\" { store lexbuf; string2 lexbuf }
 	| "\\'" { store lexbuf; string2 lexbuf }
