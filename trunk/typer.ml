@@ -176,14 +176,14 @@ let rec unify ta tb p =
 		unify r2 r1 p
 	| Class cl1, Class cl2 ->
 		let rec loop cl1 =
-			if cl1 == cl2 || List.exists ((==) cl2) cl1.implements then
-				()
+			if cl1 == cl2 || List.exists loop cl1.implements then
+				true
 			else if cl1.super == cl1 then
-				error (Cannot_unify (ta,tb)) p
+				false
 			else
 				loop cl1.super
 		in
-		loop cl1
+		if not (loop cl1) then error (Cannot_unify (ta,tb)) p
 	| Function _, Class c
 	| Static _, Class c when c.super == c -> () (* unify with Object *)
 	| Static _ , Class cl
