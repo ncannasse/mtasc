@@ -1037,7 +1037,7 @@ let generate file ~compress exprs =
 				found := true;
 				let clip_id = 0xFFFF in
 				tag (TClip { c_id = clip_id ; c_frame_count = 1; c_tags = [] }) ::
-				tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.Test" }]) ::
+				tag (TExport [{ exp_id = clip_id; exp_name = "__Packages.MTASC" }]) ::
 				tag (TDoInitAction { dia_id = clip_id; dia_actions = ctx.ops }) ::
 				List.rev (x :: acc) @ loop [] l
 			end
