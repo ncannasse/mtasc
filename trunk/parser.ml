@@ -108,7 +108,7 @@ and parse_field_flags stat pub = parser
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); g = parse_getter; '(Const (Ident name),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); '(Const (Ident name),_); name , g = parse_getter name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
 			fname = name;
 			fargs = args;
@@ -269,10 +269,13 @@ and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()
 	| [< _ ; () = parse_metadata >] -> ()
 
-and parse_getter = parser
-	| [< '(Const (Ident "get"),_); >] -> Getter
-	| [< '(Const (Ident "set"),_); >] -> Setter
-	| [< >] -> Normal
+and parse_getter name = parser
+	| [< '(Const (Ident fname),_); >] -> 
+		fname, (match name with
+		| "get" -> Getter
+		| "set" -> Setter
+		| _ -> raise Stream.Failure)
+	| [< >] -> name , Normal
 
 let parse code file =
 	let old = Lexer.save() in
