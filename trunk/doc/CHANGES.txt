@@ -6,6 +6,7 @@
 	fixed numbers starting with '.'
 	fixed Function object unify with any function.
 	fixed lexer for mac newlines.
+	fixed parser for a (op) b ? x : x'
 
 2004-11-09 : beta4
 	support for "arguments"
