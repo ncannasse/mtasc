@@ -28,7 +28,6 @@ type generated =
 type context = {
 	path : type_path;
 	vars : vars;
-	imports : (string,type_path) Hashtbl.t;
 	herits : herit list;
 	exprs : signature list;
 	expr : expr;
@@ -46,7 +45,6 @@ type context = {
 let empty =  {
 	path = ([],"<empty>");
 	vars = Hashtbl.create 0;
-	imports = Hashtbl.create 0;
 	herits = [];
 	expr = (EBlock [],null_pos);
 	classes = Hashtbl.create 0;
@@ -98,15 +96,6 @@ let interface clctx =
 let interfaces clctx =
 	clctx.interfaces
 
-let resolve clctx (path,name) =
-	match path with
-	| [] ->
-		(try
-			Hashtbl.find clctx.imports name
-		with
-			Not_found -> [] , name)
-	| _ -> path , name
-
 let rec resolve_supervar c name =
 	match c.superclass with
 	| None -> 
@@ -123,14 +112,11 @@ let rec resolve_supervar c name =
 
 
 let generate_exprs h fname el =
-	let imports = Hashtbl.create 0 in
 	let add_class interf path herits e =
-		Hashtbl.add imports (snd path) path;
 		Hashtbl.add h path {
 			filename = fname;
 			path = path;
 			vars = Hashtbl.create 0;
-			imports = imports;
 			herits = herits;
 			is_interface = interf;
 			classes = h;
@@ -150,10 +136,8 @@ let generate_exprs h fname el =
 			add_class false path herits e
 		| EInterface (path,herits,e) ->
 			add_class true path herits e
-		| EImport (path,Some name) ->
-			Hashtbl.add imports name (path,name)
-		| EImport (path,None) ->
-			assert false
+		| EImport _ ->
+			()
 	in
 	List.iter loop el
 
@@ -182,7 +166,7 @@ let rec generate_class_vars h gen clctx (e,p) =
 
 and generate_class_static_refs h gen clctx v =
 	let check p =
-		let clctx2 = (try Hashtbl.find h (resolve clctx p) with Not_found -> assert false) in
+		let clctx2 = (try Hashtbl.find h p with Not_found -> assert false) in
 		if clctx2 != clctx then generate_class h gen clctx2
 	in
 	let rec loop (v,p) =
@@ -225,14 +209,14 @@ and generate_class h gen clctx =
 			| HIntrinsic | HDynamic -> ()
 			| HExtends path ->
 				(try
-					let hctx = Hashtbl.find h (resolve clctx path) in
+					let hctx = Hashtbl.find h path in
 					clctx.superclass <- Some hctx;
 					generate_class h gen hctx
 				with
 					Not_found -> assert false)
 			| HImplements path ->
 				try
-					let hctx = Hashtbl.find h (resolve clctx path) in
+					let hctx = Hashtbl.find h path in
 					clctx.interfaces <- hctx :: clctx.interfaces;
 					generate_class h gen hctx
 				with

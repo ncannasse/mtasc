@@ -509,7 +509,9 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		| Package pk when not in_field -> resolve_package ctx e pk p
 		| t -> t)
 	| EStatic cpath ->
-		Static (resolve_path ctx cpath p)
+		let c = resolve_path ctx cpath p in
+		set_eval e (EStatic c.path);
+		Static c
 	| EParenthesis v ->
 		type_val ctx v
 	| EObjDecl vl ->
@@ -686,7 +688,7 @@ let rec type_class_fields ctx clctx (e,p) =
 	| _ ->
 		assert false
 
-let type_class ctx cpath herits e imports file interf =
+let type_class ctx cpath herits e imports file interf s =
 	let old = ctx.current in
 	let rec clctx = {
 		path = cpath;
@@ -703,6 +705,13 @@ let type_class ctx cpath herits e imports file interf =
 	Hashtbl.add imports.paths clctx.name clctx.path;
 	Hashtbl.add ctx.classes cpath clctx;
 	ctx.current <- clctx;
+	let herits = List.map (function
+		| HExtends cpath -> HExtends (resolve_path ctx cpath (pos e)).path
+		| HImplements cpath -> HImplements (resolve_path ctx cpath (pos e)).path
+		| HDynamic
+		| HIntrinsic as x -> x
+	) herits in
+	Obj.set_field (Obj.repr s) 0 (Obj.repr (if interf then EInterface (cpath,herits,e) else EClass (cpath,herits,e)));
 	let rec loop = function
 		| [] -> !load_class_ref ctx ([],"Object") (pos e)
 		| HExtends cpath :: _ -> resolve_path ctx cpath (pos e)
@@ -737,16 +746,16 @@ let type_file ctx req_path file el pos =
 		else
 			error (Class_name_mistake t) pos
 	in
-	List.iter (fun (s,p) ->
+	List.iter (fun ((s,p) as sign) ->
 		match s with
 		| EClass (t,hl,e) ->
 			if t <> req_path then error t (snd e);
 			if !clctx <> None then assert false;
-			clctx := Some (type_class ctx t hl e imports file false)
+			clctx := Some (type_class ctx t hl e imports file false sign)
 		| EInterface (t,hl,e) ->
 			if t <> req_path then error t (snd e);
 			if !clctx <> None then assert false;
-			clctx := Some (type_class ctx t hl e imports file true)
+			clctx := Some (type_class ctx t hl e imports file true sign)
 		| EImport (p,Some name) ->
 			Hashtbl.add imports.paths name (p,name)
 		| EImport (pk,None) ->
