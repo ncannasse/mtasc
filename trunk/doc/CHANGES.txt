@@ -1,14 +1,15 @@
-2004-12-?? : beta8
+2005-01-05 : rc1
 	private methods can be called from childs
-	added "main" call by default and "-nomain"
 	fixed super calls without superclass failure
 	added warning when package is missing.
 	fixed error when package not found
 	NetConnection is now dynamic
 	trace() takes any object, not just Strings
-	main is turned off by default, use -main
+	added "-main" argument
 	added try/catch/finally+throw support
 	added documentation tutorial
+	fixed utf8 encoding problems
+	fixed "new x" problem (when x is a variable) 
 
 2004-12-08 : beta7
 	released restriction on super
