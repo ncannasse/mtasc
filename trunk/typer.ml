@@ -713,14 +713,20 @@ let type_file ctx req_path file el pos =
 		paths = Hashtbl.create 0;
 		wildcards = [];
 	} in
+	let error t p =
+		if pos = null_pos then
+			error (Class_name_mistake req_path) p
+		else
+			error (Class_name_mistake t) pos
+	in
 	List.iter (fun (s,p) ->
 		match s with
-		| EClass (t,hl,e) -> 
-			if t <> req_path then error (Class_name_mistake t) pos;
+		| EClass (t,hl,e) ->
+			if t <> req_path then error t (snd e);
 			if !clctx <> None then assert false;
 			clctx := Some (type_class ctx t hl e imports file false)
 		| EInterface (t,hl,e) ->
-			if t <> req_path then error (Class_name_mistake t) pos;
+			if t <> req_path then error t (snd e);
 			if !clctx <> None then assert false;
 			clctx := Some (type_class ctx t hl e imports file true)
 		| EImport (p,Some name) ->
