@@ -242,14 +242,21 @@ and type_ident ctx name e p =
 	with
 		Not_found ->
 			(* static variable lookup *)
-			match resolve (Static ctx.current) name with
-			| Some f -> 
-				set_eval e (EField ((EStatic ctx.current.path,p),name));
+			let rec loop c =
+				try 
+					Some (c , Hashtbl.find c.statics name)
+				with 
+					Not_found -> 
+						if c.super == c then None else loop c.super
+			in
+			match loop ctx.current with
+			| Some (c,f) -> 
+				set_eval e (EField ((EStatic c.path,p),name));
 				f.f_type
 			| None -> 
 				match resolve (Static (!load_class_ref ctx ([],"TopLevel") null_pos)) name with
 				| Some f -> 
-					set_eval e (EField ((EConst (Ident "_global"),p),name));			
+					if f.f_public = IsPublic then set_eval e (EField ((EConst (Ident "_global"),p),name));
 					f.f_type
 				| None -> 
 					if not ctx.current.dynamic then error (Custom ("Unknown identifier " ^ name)) p;
@@ -364,8 +371,9 @@ and type_val ctx ((v,p) as e) =
 		| Function (fargs,ret) ->
 			let rec loop l1 l2 =
 				match l1 , l2 with
-				| [] , _
-				| _ , [] -> ()
+				| [] , _ -> ()
+				| l , [] ->
+					List.iter (fun v -> ignore(type_val ctx v)) l
 				| v :: l1 , a :: l2 ->
 					unify (type_val ctx v) a (pos v);
 					loop l1 l2

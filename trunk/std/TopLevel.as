@@ -18,16 +18,20 @@ intrinsic class TopLevel {
 
 	static function MMExecute(expr:String);
 
-	//
-	static function getURL(url:String,target:String,vars:String):Void;
-	static function getTimer():Number;
-	static function random( n : Number ) : Number;
-	static function int( o : Object ) : Number;
-	static function string( o : Object ) : String;
-	static function chr( o : Number ) : String;
-	static function ord( s : String ) : Number;
-	static function delete( o ) : Void;
-	static function loadMovie( url : String, target : MovieClip, method : String ) : Void;
+	// private members are not stored into _global, they need special compilation opcodes
+	
+	private static function getURL(url:String,target:String,vars:String):Void;
+	private static function getTimer():Number;
+	private static function random( n : Number ) : Number;
+	private static function int( o : Object ) : Number;
+	private static function string( o : Object ) : String;
+	private static function chr( o : Number ) : String;
+	private static function ord( s : String ) : Number;
+	private static function delete( o ) : Void;
+	private static function loadMovie( url : String, target : MovieClip, method : String ) : Void;
+	private static function loadVariables( url : String, target : MovieClip, method : String ) : Void;
+	private static function typeof( o ) : String;
+	private static function instanceof( o : Object, cl : Object ) : Boolean;
 	
 
 }

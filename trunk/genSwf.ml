@@ -61,7 +61,11 @@ let stack_delta = function
 	| ALocalVar -> -1
 	| ALocalAssign -> -2
 	| AReturn -> -1
-	| AIncrement | ADecrement -> 0
+	| AGetURL2 _ -> -1
+	| ADeleteObj | AInstanceOf -> -1
+	| AExtends | AImplements -> -2
+	| AEnum2 -> -1
+	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf -> 0
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
 
@@ -303,31 +307,43 @@ let super_binding_ident path fname =
 	| [] -> ""
 	| l -> String.concat "_" l ^ "_") ^ snd path ^ "_" ^ fname
 
-let generate_package ctx l =
-	push ctx [VStr "_global"];
-	write ctx AEval;
-	List.iter (fun p ->
-		push ctx [VStr p];
-		write ctx AObjGet;
-	) l;
-	VarObj
+let generate_package ?(fast=false) ctx l =
+	if fast then begin
+		match l with
+		| [] -> VarStr
+		| p :: l ->		
+			push ctx [VStr p];
+			write ctx AEval;
+			List.iter (fun p -> push ctx [VStr p]; write ctx AObjGet) l;
+			VarObj
+	end else begin
+		push ctx [VStr "_global"];
+		write ctx AEval;
+		List.iter (fun p ->
+			push ctx [VStr p];
+			write ctx AObjGet;
+		) l;
+		VarObj
+	end
 
 let rec generate_package_register ctx = function
 	| [] -> ()
 	| p :: [] ->
-		ignore(generate_package ctx (p :: []));
+		ignore(generate_package ~fast:true ctx (p :: []));
 		write ctx ANot;
 		write ctx ANot;
 		let j = cjmp ctx in
+		push ctx [VStr "_global"];
+		write ctx AEval;
 		push ctx [VStr p; VInt 0; VStr "Object"];
 		write ctx ANew;
-		write ctx ASet;
+		write ctx AObjSet;
 		j()
 	| p :: l ->
 		let lrev = List.rev l in
 		let all_but_last , last = List.rev (List.tl lrev), List.hd lrev in
 		generate_package_register ctx (p :: all_but_last);
-		ignore(generate_package ctx (p :: l));
+		ignore(generate_package ~fast:true ctx (p :: l));
 		write ctx ANot;
 		write ctx ANot;
 		let j = cjmp ctx in
@@ -437,7 +453,7 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 			push ctx [VStr "XMLSocket"];
 			VarStr
 		| p , s ->
-			let k = generate_package ctx p in
+			let k = generate_package ~fast:true ctx p in
 			push ctx [VStr s];
 			k)
 	| EArray (va,vb) ->
@@ -504,14 +520,55 @@ and generate_binop retval ctx op v1 v2 =
 	| OpUShr -> gen AAsr
 	| OpMod -> gen AMod
 
+and generate_geturl ctx c vars p =
+	let k = match vars with
+		| v1 :: v2 :: l -> 
+			generate_val ctx v1;
+			generate_val ctx v2;
+			(match l with
+			| [] -> 0
+			| [EConst (String "GET"),_] -> 1
+			| [EConst (String "POST"),_] -> 2
+			| (_,p) :: [] -> error p
+			| _ -> error p)
+		| _  -> error p
+	in
+	write ctx (AGetURL2 (k + (match c with "getURL" -> 0 | "loadMovie" -> 64 | "loadVariables" -> 192 | _ -> assert false)))
+
 and generate_call ?(newcall=false) ctx v vl =
 	match fst v , vl with
+	| EConst (Ident "instanceof") , [v1;v2] ->
+		generate_val ctx v1;
+		generate_val ctx v2;
+		write ctx AInstanceOf
+	| EConst (Ident "typeof") , [v] ->
+		generate_val ctx v;
+		write ctx ATypeOf;
+	| EConst (Ident "chr") , [v] ->
+		generate_val ctx v;
+		write ctx AChr;
+	| EConst (Ident "ord") , [v] ->
+		generate_val ctx v;
+		write ctx AOrd;
 	| EConst (Ident "int") , [v] ->
 		generate_val ctx v;
 		write ctx AToInt
 	| EConst (Ident "string") , [v] ->
 		generate_val ctx v;
 		write ctx AToString
+	| EConst (Ident "random") , [v] ->
+		generate_val ctx v;
+		write ctx ARandom
+	| EConst (Ident "delete") , [v] ->
+		(match generate_access ~forcall:true ctx v with
+		| VarObj -> write ctx ADeleteObj
+		| _ -> write ctx ADelete)
+	| EConst (Ident "getTimer"), [] ->
+		write ctx AGetTimer
+	| EConst (Ident ("getURL" as x)) , params
+	| EConst (Ident ("loadMovie" as x)) , params
+	| EConst (Ident ("loadVariables" as x)) , params ->
+		generate_geturl ctx x params (pos v)
 	| EField ((EConst (Ident "super"),_),fname) , args ->
 		let path = Class.resolve_supervar ctx.current fname in
 		let ident = super_binding_ident path fname in
@@ -661,8 +718,38 @@ let rec generate_expr ctx (e,p) =
 		generate_breaks ctx old_breaks;
 		ctx.continue_pos <- old_continue;
 		block_end()
-	| EForIn (decls,v,e) ->
-		prerr_endline "**TODO:forin**" (*** TODO ***)
+	| EForIn (decl,v,e) ->
+		let block_end = open_block ctx e in
+		generate_val ctx v;
+		write ctx AEnum2;
+		let start_pos = ctx.code_pos in
+		let old_continue = ctx.continue_pos in
+		let old_breaks = ctx.breaks in
+		ctx.breaks <- [];
+		ctx.continue_pos <- start_pos;
+		ctx.opt_push <- false;
+		write ctx (ASetReg 0);
+		push ctx [VNull];
+		write ctx AEqual;
+		let jump_end = cjmp ctx in
+		(match fst decl with
+		| EVal (EConst (Ident x),_) ->
+			push ctx [VStr x];
+			write ctx (APush [PReg 0]);
+			write ctx ASet;
+		| EVars (_,_,[(x,_,None) as l]) ->
+			push ctx [VStr x];
+			Hashtbl.add ctx.locals x { reg = 0; sp = ctx.stack };
+			write ctx (APush [PReg 0]);
+			write ctx ALocalAssign
+		| _ ->
+			error (pos decl));
+		generate_expr ctx e;
+		do_jmp ctx start_pos;
+		jump_end();
+		generate_breaks ctx old_breaks;
+		ctx.continue_pos <- old_continue;
+		block_end()
 	| EIf (v,e,eelse) ->
 		generate_val ctx v;
 		write ctx ANot;
@@ -797,26 +884,11 @@ let generate_class_code ctx clctx =
 	(match Class.superclass clctx with
 	| None -> ()
 	| Some csuper ->
-		(* // <path>.prototype.__proto__ = <super-path>.prototype; *)
 		let k = gen_full_path() in
 		getvar ctx k;
-		push ctx [VStr "prototype"];
-		getvar ctx VarObj;
-		push ctx [VStr "__proto__"];
 		let k = generate_access ctx (EStatic (Class.path csuper),null_pos) in 
 		getvar ctx k;
-		push ctx [VStr "prototype"];
-		getvar ctx VarObj;
-		setvar ctx VarObj;
-		(* // <path>.prototype.__constructor__ = <super-path>; *)
-		let k = gen_full_path() in
-		getvar ctx k;
-		push ctx [VStr "prototype"];
-		getvar ctx VarObj;
-		push ctx [VStr "__constructor__"];
-		let k = generate_access ctx (EStatic (Class.path csuper),null_pos) in 
-		getvar ctx k;
-		setvar ctx VarObj);
+		write ctx AExtends);
 	List.iter (fun f ->
 		match f.fexpr with
 		| None -> ()
@@ -831,6 +903,16 @@ let generate_class_code ctx clctx =
 			generate_function ctx f;
 			setvar ctx VarObj;
 	) (Class.methods clctx);
+	List.iter (fun cintf ->
+		getvar ctx (generate_access ctx (EStatic (Class.path cintf),null_pos));
+	) (Class.interfaces clctx);
+	let nintf = List.length (Class.interfaces clctx) in
+	if nintf > 0 then begin
+		push ctx [VInt nintf];
+		getvar ctx (gen_full_path());
+		write ctx AImplements;
+		ctx.stack_size <- ctx.stack_size - nintf;
+	end;
 	List.iter (fun (name,v) ->
 		let k = gen_full_path() in
 		getvar ctx k;
@@ -872,6 +954,8 @@ let generate input file compress exprs =
 		curmethod = "";
 	} in
 	DynArray.add ctx.ops (AStringPool []);
+	push ctx [VStr "Compiled with MTASC : http://tech.motion-twin.com"];
+	write ctx APop;
 	Class.generate (fun clctx ->
 		ctx.current <- clctx;
 		if not (Class.intrinsic clctx) then generate_class_code ctx clctx

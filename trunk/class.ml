@@ -77,6 +77,9 @@ let intrinsic clctx =
 let interface clctx =
 	clctx.is_interface
 
+let interfaces clctx =
+	clctx.interfaces
+
 let resolve clctx (path,name) =
 	match path with
 	| [] ->
@@ -143,7 +146,7 @@ let rec generate_class_vars h gen clctx (e,p) =
 			| _ , _ -> ()
 		) vl
 	| EFunction f ->		
-		if f.fname = "new" then
+		if f.fname = snd clctx.path then
 			clctx.constructor <- Some f
 		else begin
 			Hashtbl.add clctx.vars f.fname f.fstatic;
