@@ -246,7 +246,7 @@ let rec add_class_field ctx clctx fname stat pub get ft p =
 				else
 					(match ft with 
 					| Function ([arg],r) -> 
-						if r <> Void then error (Custom "Setter should not return any value") p;
+						if r <> Void && r <> Dyn then error (Custom "Setter should not return any value") p;
 						arg 
 					| Function _ ->
 						error (Custom "Setter can only have one parameter") p
