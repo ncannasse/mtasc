@@ -1,6 +1,7 @@
 2005-01-?? : rc3
 	fixed super field accesses
 	fixed -separate with -main issues
+	relaxed new so constructor can return any value.
 	
 2005-01-13 : rc2
 	fixed throw parsing
