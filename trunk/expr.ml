@@ -50,6 +50,7 @@ type keyword =
 	| Try
 	| Catch
 	| Finally
+	| With
 
 type binop =
 	| OpAdd
@@ -177,6 +178,7 @@ and expr_def =
 	| EWhile of eval * expr * while_flag
 	| ESwitch of eval * (eval * expr) list * expr option
 	| ETry of expr * (string * type_path option * expr) list * expr option
+	| EWith of eval * expr
 	| EReturn of eval option
 	| EBreak
 	| EContinue
@@ -261,6 +263,7 @@ let s_keyword = function
 	| Try -> "try"
 	| Catch -> "catch"
 	| Finally -> "finally"
+	| With -> "with"
 
 let rec s_binop = function
 	| OpAdd -> "+"

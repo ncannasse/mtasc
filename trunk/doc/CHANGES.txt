@@ -6,6 +6,8 @@
 	added getURL with one argument only
 	fixed "prototype" static resolved.
 	fixed typeof syntax
+	added "with"
+	added _levelXX
 	
 2005-02-21 : 1.01
 	fixed doaction/showframe inversion

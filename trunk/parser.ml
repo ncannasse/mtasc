@@ -139,6 +139,7 @@ and parse_expr = parser
 	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el , eo, p2 = parse_switch >] -> ESwitch (v,el,eo) , punion p1 p2
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (IsMember,IsPublic,vl), punion p1 p2
 	| [< '(Kwd Try,p1); e = parse_expr; c = parse_catches; f = parse_finally >] -> ETry (e,c,f) , punion p1 (pos e)
+	| [< '(Kwd With,p1); v = parse_eval; e = parse_expr >] -> EWith (v,e) , punion p1 (pos e)
 	| [< e = parse_eval >] -> EVal e , pos e
 	| [< _ = parse_include; e = parse_expr >] -> e
 

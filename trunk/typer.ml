@@ -73,6 +73,7 @@ type context = {
 	mutable istring : type_decl;
 	mutable returns : type_decl;
 	mutable current : class_context;
+	mutable curwith : type_decl option;
 	finalizers : (unit -> unit) list ref;
 }
 
@@ -225,6 +226,8 @@ let ret_opt ctx p f =
 			List.exists (fun (_,e) -> has_return e) cases || (match def with None -> false | Some e -> has_return e)
 		| ETry (e,cl,fo) ->			
 			(has_return e) || List.exists (fun (_,_,e) -> has_return e) cl || (match fo with None -> false | Some e -> has_return e)
+		| EWith (_,e) ->
+			has_return e
 		| EReturn (Some _ ) ->
 			true
 	in
@@ -334,6 +337,23 @@ let rec resolve t fname =
 					resolve (Class c.super) fname
 
 and type_ident ctx name e p =
+	(* with lookup *)
+	try
+		match ctx.curwith with
+		| None -> raise Not_found
+		| Some t ->
+			match t with
+			| Void
+			| Static _
+			| Package _ -> assert false
+			| Dyn -> set_eval e (EStatic (["__With"],name)); Dyn
+			| Function _ -> set_eval e (EStatic (["__With"],name)); Dyn
+			| Class c ->
+				match resolve (Class c) name with
+				| None -> raise Not_found
+				| Some { f_public = IsPrivate } when not (is_super c ctx.current) -> error (Custom "Cannot access private field") p
+				| Some f -> set_eval e (EStatic (["__With"],name)); f.f_type
+	with Not_found ->
 	(* local variable lookup *)
 	try
 		let l = Hashtbl.find ctx.locals name in
@@ -370,7 +390,10 @@ and type_ident ctx name e p =
 					if f.f_public = IsPublic then set_eval e (EField ((EConst (Ident "_global"),p),name));
 					f.f_type
 				| None -> 
-					Package [name]
+					if String.length name > 6 && String.sub name 0 6 = "_level" && (try int_of_string (String.sub name 6 (String.length name - 6)) >= 0 with _ -> false) then
+						Class (!load_class_ref ctx ([],"MovieClip") null_pos)
+					else
+						Package [name]
 
 let type_constant ctx c e p =
 	match c with
@@ -676,6 +699,19 @@ let rec type_expr ctx (e,p) =
 			clean_frame ctx f
 		) cl;
 		(match fo with None -> () | Some e -> type_expr ctx e)
+	| EWith (v,e) ->
+		let old_with = ctx.curwith in
+		let t = type_val ctx v in
+		(match t with
+		| Void
+		| Static _ -> error (Custom "Invalid type for 'with' argument") p
+		| Package _ -> assert false
+		| Dyn
+		| Function _ -> prerr_endline ("Warning : 'with' argument is not typed in " ^ p.pfile)
+		| Class _ -> ());
+		ctx.curwith <- Some t;
+		ignore(type_expr ctx e);
+		ctx.curwith <- old_with;
 	| EReturn None ->
 		if ctx.returns <> Void && ctx.returns <> Dyn then error (Custom "Return type cannot be Void") p;
 	| EReturn (Some v) ->
@@ -698,6 +734,7 @@ let type_function ?(lambda=false) ctx clctx f p =
 				in_static = (f.fstatic = IsStatic);
 				in_constructor = (f.fstatic = IsMember && f.fname = clctx.name);
 				in_lambda = lambda;
+				curwith = None;
 		} in
 		let fr = new_frame ctx in
 		ctx.returns <- ret_opt ctx p f;
@@ -890,6 +927,7 @@ let create cpath =
 		in_lambda = false;
 		in_constructor = false;
 		returns = Void;
+		curwith = None;
 		locals = Hashtbl.create 0;
 		frame = 0;
 	} in
