@@ -43,7 +43,7 @@ let priority = function
 
 let rec make_binop op e ((v,p2) as e2) =
 	match v with
-	| EBinop (_op,_e,_e2) when priority _op <= priority op ->
+	| EBinop (_op,_e,_e2) when priority _op <= priority op && (_op <> OpAssign || op <> OpAssign) ->
 		let _e = make_binop op e _e in
 		EBinop (_op,_e,_e2) , punion (pos _e) (pos _e2)
 	| _ ->
