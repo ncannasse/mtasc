@@ -8,7 +8,8 @@
 	improved typing of classnames as Function
 	allowed Array[Boolean]
 	fixed parsing of  x = y ? z : w;
-	
+	fixed auto self import in swf generation
+	forbidden calls to super when no super available
 
 2004-11-17 : beta5
 	fixed back the Export name to "MTASC" (causing problem with -keep)
