@@ -1,6 +1,6 @@
 intrinsic class Number
 {
-	function Number(num:Object);
+	function Number(num:Object) : Void;
 	static var NaN:Number;
 	static var MAX_VALUE:Number;
 	static var MIN_VALUE:Number;

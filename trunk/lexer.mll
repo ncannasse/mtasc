@@ -28,7 +28,7 @@ let keywords =
 	List.iter (fun k -> Hashtbl.add h (s_keyword k) k) 
 		[Function;Class;Static;Var;If;Else;While;Do;For;
 		Break;Return;Continue;Interface;Extends;Implements;Import;
-		Switch;Case;Default;Intrinsic;Dynamic];
+		Switch;Case;Default;Intrinsic;Dynamic;Public;Private];
 	h
 
 let init file =
@@ -132,7 +132,8 @@ rule token = parse
 	| "&&" { mk lexbuf (Binop OpBoolAnd) }
 	| "||" { mk lexbuf (Binop OpBoolOr) }
 	| "<<" { mk lexbuf (Binop OpShl) }
-(*//| ">>" { mk lexbuf (Binop OpShr) }*)
+	| ">>" { mk lexbuf (Binop OpShr) }
+	| ">>>" { mk lexbuf (Binop OpUShr) }
 	| "!" { mk lexbuf (Unop Not) }
 	| "<" { mk lexbuf (Binop OpLt) }
 	| ">" { mk lexbuf (Binop OpGt) }
@@ -177,6 +178,8 @@ rule token = parse
 			let pmax = (try string2 lexbuf with Exit -> error Unterminated_string pmin) in
 			mk_tok (Const (String (contents()))) pmin pmax;
 		}
+	| "E" | "NaN" | "Infinity" { mk_ident lexbuf }
+	| "XML" | "URI" { mk lexbuf (Const (Name (lexeme lexbuf))) }
 	| ident { mk_ident lexbuf }
 	| ident2 { mk_ident lexbuf }
 	| name { mk lexbuf (Const (Name (lexeme lexbuf))) }

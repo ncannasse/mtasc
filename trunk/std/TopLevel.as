@@ -1,9 +1,6 @@
 
 intrinsic class TopLevel {
 
-	static var _global:Object;
-	static var _root:Object;
-
 	static var Infinity:Number;
 	static var NaN:Number;
 
@@ -15,11 +12,22 @@ intrinsic class TopLevel {
 	static function updateAfterEvent():Void;
 	static function isNaN(value:Object):Boolean;
 	static function isFinite(value:Object):Boolean;
-	static function getURL(url:String,target:String,vars:String):Void;
 
 	static function setInterval():Number;
 	static function clearInterval(id:Number):Void;
 
 	static function MMExecute(expr:String);
+
+	//
+	static function getURL(url:String,target:String,vars:String):Void;
+	static function getTimer():Number;
+	static function random( n : Number ) : Number;
+	static function int( o : Object ) : Number;
+	static function string( o : Object ) : String;
+	static function chr( o : Number ) : String;
+	static function ord( s : String ) : Number;
+	static function delete( o ) : Void;
+	static function loadMovie( url : String, target : MovieClip, method : String ) : Void;
+	
 
 }

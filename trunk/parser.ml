@@ -53,10 +53,10 @@ let rec	parse_code = parser
 
 and parse_signature = parser
 	| [< '(Kwd Import,p1); p = parse_class_path >] -> EImport p , p1
-	| [< '(Kwd Interface,p1); path = parse_class_path; herits = parse_herits; '(BrOpen,p); el , p2 = parse_class parse_field_decl >] -> 
+	| [< '(Kwd Interface,p1); path = parse_class_path; herits = parse_herits; '(BrOpen,p); el , p2 = parse_class true >] -> 
 		EInterface (path,herits,(EBlock el,punion p p2)) , punion p1 p2
 	| [< flags = parse_class_flags; '(Kwd Class,p); path = parse_class_path; herits = parse_herits; '(BrOpen,op); s >] -> 
-		let el, p2 = parse_class (if List.exists ((=) HIntrinsic) flags then parse_field_impl else parse_field_decl) s in
+		let el, p2 = parse_class (List.exists ((=) HIntrinsic) flags) s in
 		EClass (path, flags @ herits, (EBlock el, punion op p2)) , punion p p2
 
 and parse_herits = parser
@@ -69,10 +69,10 @@ and parse_class_flags = parser
 	| [< '(Kwd Dynamic,_); l = parse_class_flags >] -> HDynamic :: l
 	| [< >] -> []
 
-and parse_class pfield = parser
+and parse_class interf = parser
 	| [< '(BrClose,p) >] -> [] , p
-	| [< '(Next,_); n = parse_class pfield >] -> n
-	| [< flags = parse_field_flags IsMember IsPublic; f = pfield flags; fl , p = parse_class pfield >] -> f :: fl , p
+	| [< '(Next,_); n = parse_class interf >] -> n
+	| [< flags = parse_field_flags IsMember IsPublic; f = parse_class_field flags interf; fl , p = parse_class interf >] -> f :: fl , p
 
 and parse_field_flags stat pub = parser
 	| [< '(Kwd Static,_); f = parse_field_flags IsStatic pub >] -> f
@@ -80,33 +80,25 @@ and parse_field_flags stat pub = parser
 	| [< '(Kwd Private,_); f = parse_field_flags stat IsPrivate >] -> f
 	| [< >] -> stat , pub
 
-and parse_field_impl (stat,pub) = parser
+and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); '(Const (Ident fname),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; e = parse_expr >] -> 
+	| [< '(Kwd Function,p1); fname = parse_function_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
 			fname = fname;
 			fargs = args;
 			ftype = t;
 			fstatic = stat;
 			fpublic = pub;
-			fexpr = Some e;
-		} , punion p1 (pos e)
-
-and parse_field_decl (stat,pub) = parser
-	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1;  >] -> EVars (stat,pub,vl), punion p1 p2
-	| [< '(Kwd Function,p1); '(Const (Ident fname),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option >] ->
-		EFunction {	
-			fname = fname;
-			fargs = args;
-			ftype = t;
-			fstatic = stat;
-			fpublic = pub;
-			fexpr = None;
+			fexpr = if interf then None else Some (parse_expr s);
 		} , punion p1 p2
+
+and parse_function_name = parser
+	| [< '(Const (Ident fname),_); >] -> fname
+	| [< '(Const (Name fname),_); >] -> fname
 
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
-	| [< '(Kwd For,p); '(POpen,_); e = parse_for p >] -> e
+	| [< '(Kwd For,p); '(POpen,_); c = parse_expr; e = parse_for p c >] -> e
 	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr; e2 , p2 = parse_else (pos e) >] -> EIf (cond,e,e2), punion p p2
 	| [< '(Kwd Return,p); v , p2 = parse_eval_option p; >] -> EReturn v , punion p p2
 	| [< '(Kwd Break,p); >] -> EBreak , p
@@ -118,7 +110,7 @@ and parse_expr = parser
 	| [< e = parse_eval >] -> EVal e , pos e
 
 and parse_eval = parser
-	| [< '(Const (Ident "fun"),p1); '(POpen,_); args, _ = parse_args; t = parse_type_option; e = parse_expr;
+	| [< '(Kwd Function,p1); '(POpen,_); args, _ = parse_args; t = parse_type_option; e = parse_expr;
 		v = parse_eval_next (ELambda {
 			fname = "";
 			fargs = args;
@@ -137,7 +129,7 @@ and parse_eval = parser
 
 and parse_eval_next e = parser
 	| [< '(BkOpen,_); e2 = parse_eval; '(BkClose,p2); e = parse_eval_next (EArray (e,e2) , punion (pos e) p2) >] -> e
-	| [< op = parse_binop; e2 = parse_eval; >] -> make_binop op e e2
+	| [< '(Binop op,_); e2 = parse_eval; >] -> make_binop op e e2
 	| [< '(Dot,_); e = parse_field_access e >] -> e
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
 	| [< '(Unop op,p2) when is_postfix op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
@@ -147,18 +139,6 @@ and parse_eval_next e = parser
 and parse_field_access e = parser
 	| [< '(Const (Ident field),p2); e = parse_eval_next (EField (e,field), punion (pos e) p2) >] -> e
 	| [< '(Const (Name cl),p2); e = parse_eval_next (EStatic (make_path e,cl), punion (pos e) p2) >] -> e
-
-and parse_binop = parser
-	| [< '(Binop OpGt,_); op = parse_binop_gt >] -> op
-	| [< '(Binop op,_) >] -> op
-
-and parse_binop_gt = parser
-	| [< '(Binop OpGt,_); op = parse_binop_gt2 >] -> op
-	| [< >] -> OpGt
-
-and parse_binop_gt2 = parser
-	| [< '(Binop OpGt,_) >] -> OpUShr
-	| [< >] -> OpShr
 
 and parse_new e p1 = parser
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ENew (e,args), punion p1 p2) >] -> e	
@@ -192,16 +172,13 @@ and parse_else p = parser
 	| [< '(Kwd Else,_); e = parse_expr >] -> Some e, pos e
 	| [< >] -> None , p
 
-and parse_for p = parser
-	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr >] -> EFor(cl,l1,l2,e) , punion p p2
+and parse_for p c = parser
+	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr >] -> EForIn(c,v,e) , punion p p2
+	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr >] -> EFor(c :: cl,l1,l2,e) , punion p p2
 
 and parse_for_conds = parser
-	| [< e = parse_expr; l = parse_for_conds_next >] -> e :: l
-
-and parse_for_conds_next = parser
-	| [< '(Sep,_); l = parse_for_conds >] -> l
-	| [< '(Next,_) >] -> [] 
-	| [< >] -> []
+	| [< '(Sep,_); e = parse_expr; l = parse_for_conds >] -> e :: l
+	| [< '(Next,_) >] -> []
 
 and parse_args = parser
 	| [< '(Const (Ident name),_); t = parse_type_option; al , p = parse_args >] -> (name , t) :: al , p
