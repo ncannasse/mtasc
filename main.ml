@@ -49,17 +49,13 @@ let rec split l str =
 		sub :: (split l (String.sub str (p+1) (String.length str - (p+1))))
 
 let class_name file =
-	let first_upper s =
-		if s.[0] >= 'a' && s.[0] <= 'z' then s.[0] <- char_of_int (int_of_char s.[0] - int_of_char 'a' + int_of_char 'A');
-		s
-	in
 	let path = Filename.dirname file in	
 	let path = (match split ['/';'\\'] path with "." :: l -> l | l -> l) in
 	let file = Filename.basename file in
 	path , try
-		first_upper (Filename.chop_extension file)
+		Filename.chop_extension file
 	with
-		_ -> first_upper file
+		_ -> file
 
 let normalize_path p =
 	let l = String.length p in
@@ -146,7 +142,7 @@ try
 		in
 		List.iter (fun file ->			
 			let path = class_name file in
-			ignore(Typer.load_class typer path Expr.null_pos);
+			ignore(Typer.load_class typer path Typer.argv_pos);
 		) (List.rev !files);
 		Typer.finalize typer;
 		List.iter (fun f -> f typer) !Plugin.calls;
