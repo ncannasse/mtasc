@@ -442,10 +442,12 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 	match v with		
 	| EConst (Ident "super") ->
 		(* for superconstructor *)
-		if not forcall then error p;
-		push ctx [VSuper];
-		write ctx (APush [PUndefined]);
-		VarObj
+		if forcall then begin
+			push ctx [VSuper];
+			write ctx (APush [PUndefined]);
+			VarObj
+		end else
+			VarReg 2
 	| EConst (Ident s) ->
 		generate_ident ctx s p
 	| EField (v,s) ->
