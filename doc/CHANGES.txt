@@ -3,6 +3,7 @@
 	fixed imports in lambdas
 	pop instead of trace for string mark.
 	fixed missing implementation of import wildcards for genSwf
+	fixed bug when accessing superclass in static.
 	
 2004-11-22 : beta6
 	fixed stack overflow in parsing metadata
