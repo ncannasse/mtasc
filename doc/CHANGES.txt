@@ -8,6 +8,7 @@
 	fixed typeof syntax
 	added "with"
 	added _levelXX
+	added scientific floats : 1.23e-23
 	
 2005-02-21 : 1.01
 	fixed doaction/showframe inversion
