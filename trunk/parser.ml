@@ -54,7 +54,8 @@ let rec make_binop op e ((v,p2) as e2) =
 		let _e = make_binop op e _e in
 		EBinop (_op,_e,_e2) , punion (pos _e) (pos _e2)
 	| EQuestion (_e,_e1,_e2) when is_not_assign op ->
-		EQuestion ( (EBinop(op,e,_e) , punion (pos e) (pos _e)) , _e1 , _e2) , punion (pos e) (pos _e2)
+		let _e = make_binop op e _e in
+		EQuestion ( _e, _e1, _e2) , punion (pos e) (pos _e2)
 	| _ ->
 		EBinop (op,e,e2) , punion (pos e) (pos e2)
 
@@ -72,6 +73,11 @@ let rec make_path e =
 		| _ -> raise Stream.Failure
 	in
 	loop [] e
+
+let wrap_var e =
+	match e with
+	| EVars _ , p -> EBlock [e] , p
+	| _ -> e
 
 let rec	parse_code = parser
 	| [< '(Eof,_) >] -> []
@@ -131,16 +137,16 @@ and parse_class_field (stat,pub) interf = parser
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
 	| [< '(Kwd For,p); '(POpen,_); c = parse_expr_opt; e = parse_for p c >] -> e
-	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr_opt; e2 , p2 = parse_else (pos e) >] -> EIf (cond,e,e2), punion p p2
+	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr_opt; e2 , p2 = parse_else (pos e) >] -> EIf (cond,wrap_var e,e2), punion p p2
 	| [< '(Kwd Return,p); v , p2 = parse_eval_option p; >] -> EReturn v , punion p p2
 	| [< '(Kwd Break,p); >] -> EBreak , p
 	| [< '(Kwd Continue,p); >] -> EContinue , p
-	| [< '(Kwd While,p1); v = parse_eval; e = parse_expr_opt >] -> EWhile (v,e,NormalWhile) , punion p1 (pos e)
-	| [< '(Kwd Do,p1); e = parse_expr; '(Kwd While,_); v = parse_eval; >] -> EWhile (v,e,DoWhile) , punion p1 (pos v)
+	| [< '(Kwd While,p1); v = parse_eval; e = parse_expr_opt >] -> EWhile (v,wrap_var e,NormalWhile) , punion p1 (pos e)
+	| [< '(Kwd Do,p1); e = parse_expr; '(Kwd While,_); v = parse_eval; >] -> EWhile (v,wrap_var e,DoWhile) , punion p1 (pos v)
 	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el , eo, p2 = parse_switch >] -> ESwitch (v,el,eo) , punion p1 p2
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (IsMember,IsPublic,vl), punion p1 p2
-	| [< '(Kwd Try,p1); e = parse_expr; c = parse_catches; f = parse_finally >] -> ETry (e,c,f) , punion p1 (pos e)
-	| [< '(Kwd With,p1); v = parse_eval; e = parse_expr >] -> EWith (v,e) , punion p1 (pos e)
+	| [< '(Kwd Try,p1); e = parse_expr; c = parse_catches; f = parse_finally >] -> ETry (wrap_var e,c,f) , punion p1 (pos e)
+	| [< '(Kwd With,p1); v = parse_eval; e = parse_expr >] -> EWith (v,wrap_var e) , punion p1 (pos e)
 	| [< e = parse_eval >] -> EVal e , pos e
 	| [< _ = parse_include; e = parse_expr >] -> e
 
@@ -232,7 +238,7 @@ and parse_array = parser
 
 and parse_else p = parser
 	| [< '(Next,_); e = parse_else p >] -> e
-	| [< '(Kwd Else,_); e = parse_expr >] -> Some e, pos e
+	| [< '(Kwd Else,_); e = parse_expr >] -> Some (wrap_var e), pos e
 	| [< >] -> None , p
 
 and parse_expr_opt = parser
@@ -240,8 +246,8 @@ and parse_expr_opt = parser
 	| [< '(Next,p); >] -> EBlock [] , p
 
 and parse_for p c = parser
-	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,e) , punion p p2
-	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr_opt >] -> EFor(c :: cl,l1,l2,e) , punion p p2
+	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,wrap_var e) , punion p p2
+	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr_opt >] -> EFor(c :: cl,l1,l2,wrap_var e) , punion p p2
 
 and parse_for_conds = parser
 	| [< '(Sep,_); e = parse_expr; l = parse_for_conds >] -> e :: l
