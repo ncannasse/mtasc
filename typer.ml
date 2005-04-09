@@ -511,10 +511,17 @@ let rec type_binop ctx op v1 v2 p =
 	| OpGt
 	| OpGte
 	| OpLt
-	| OpBoolAnd
-	| OpBoolOr
 	| OpLte ->
 		ctx.ibool
+	| OpBoolAnd
+	| OpBoolOr ->
+		(try
+			unify t2 t1 p;
+			t1
+		with
+			_ -> 
+				unify t1 t2 p;
+				t2)
 	| OpAssignOp op ->
 		let t = type_binop ctx op v1 v2 p in
 		unify t t1 p;
@@ -681,19 +688,19 @@ let rec type_expr ctx (e,p) =
 			type_expr ctx e
 		) cases;
 		(match def with None -> () | Some e -> type_expr ctx e)
-	| ETry (e,cl,fo) ->
-		type_expr ctx e;
+	| ETry (etry,cl,fo) ->
+		type_expr ctx etry;
 		let no_type = ref false in
-		List.iter (fun (name,t,e) -> 
-			if t = None then begin
-				if !no_type then error (Custom "Misplaced catch will fail to catch any exception") (pos e);
-				no_type := true;
-			end;
+		let cl2 = List.map (fun (name,t,e) -> 
+			if !no_type then error (Custom "Misplaced catch will fail to catch any exception") (pos e);
+			let t2 = (match t with None -> no_type := true; None | Some c -> Some (resolve_path ctx c p)) in
 			let f = new_frame ctx in
 			define_local ctx name (t_opt ctx p t) p;
 			type_expr ctx e;
-			clean_frame ctx f
-		) cl;
+			clean_frame ctx f;
+			name , t2 , e
+		) cl in
+		Obj.set_field (Obj.repr e) 2 (Obj.repr cl2);
 		(match fo with None -> () | Some e -> type_expr ctx e)
 	| EWith (v,e) ->
 		let old_with = ctx.curwith in

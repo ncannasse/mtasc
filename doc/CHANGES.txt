@@ -6,8 +6,9 @@
 	=> import will now link classes
 	fixed typing error with single "var" in a block
 	fixed parser error with a?b:c and big left-expression
-	
-	
+	fixed bug when catching "imported" exception class
+	changed boolean operators typing
+		
 2005-03-24 : 1.03
 	fixed "interface extends interface" bytecode generation
 	some missing headers 
