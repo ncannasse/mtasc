@@ -1,4 +1,4 @@
-2005-04-?? : 1.04
+2005-04-14 : 1.04
 	"for" optional first parameter and expression 
 	fixed while( o )++ i;
 	added error when duplicate import statement (with same or different package)
