@@ -8,6 +8,9 @@
 	fixed parser error with a?b:c and big left-expression
 	fixed bug when catching "imported" exception class
 	changed boolean operators typing
+	added -flash6 for F6 compilation
+	added -trace for custom trace function
+	added optional color component for -header
 		
 2005-03-24 : 1.03
 	fixed "interface extends interface" bytecode generation
