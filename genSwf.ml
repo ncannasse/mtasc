@@ -92,6 +92,8 @@ let stack_delta = function
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
 
 let enable_main = ref false
+let flash6 = ref false
+let ftrace = ref None
 
 let write ctx op =
 	let write b op =
@@ -557,6 +559,28 @@ and generate_geturl ctx c vars p =
 
 and generate_call ?(newcall=false) ctx v vl =
 	match fst v , vl with
+	| EConst (Ident "TRACE") , args ->
+		(match !ftrace with
+		| None -> ()
+		| Some f ->
+			let rec loop f =
+				try
+					let p , f = String.split f "." in
+					let p2 , f = loop f in
+					p :: p2 , f
+				with
+					Invalid_string -> [] , f
+			in
+			let p , f = loop f in
+			let pos = snd v in
+			let e = EStatic (p,f) , pos in
+			let line = Lexer.get_error_line pos in
+			generate_call ctx e 
+					(args @ [
+						(EConst (String (s_type_path (Class.path ctx.current) ^ "::" ^ ctx.curmethod))) , pos;
+						(EConst (String pos.pfile)) , pos;
+						(EConst (Int (string_of_int line))) , pos
+					]))
 	| EConst (Ident "trace") , [v] ->
 		generate_val ctx v;
 		write ctx ATrace
@@ -1029,6 +1053,21 @@ let generate_class_code ctx clctx =
 	setvar ctx k;
 	(match Class.superclass clctx with
 	| None -> ()
+	| Some csuper when !flash6 ->	
+		(* myclass.prototype.__proto__ = superclass.prototype *)
+		push ctx [VReg 0; VStr "prototype"];
+		getvar ctx VarObj;
+		push ctx [VStr "__proto__"];
+		getvar ctx (generate_access ctx (EStatic (Class.path csuper),null_pos));
+		push ctx [VStr "prototype"];
+		getvar ctx VarObj;
+		setvar ctx VarObj;
+		(* myclass.prototype.__constructor__ = superclass *)
+		push ctx [VReg 0; VStr "prototype"];
+		getvar ctx VarObj;
+		push ctx [VStr "__constructor__"];
+		getvar ctx (generate_access ctx (EStatic (Class.path csuper),null_pos));
+		setvar ctx VarObj
 	| Some csuper ->
 		push ctx [VReg 0];
 		getvar ctx (generate_access ctx (EStatic (Class.path csuper),null_pos));
@@ -1122,6 +1161,7 @@ let to_utf8 str =
 let use_components = ref false
 let separate = ref false
 let keep = ref false
+let bgcolor = ref 0xFFFFFF
 let frame = ref 1
 let header = ref None
 let excludes = Hashtbl.create 0
@@ -1212,10 +1252,11 @@ let generate file ~compress exprs =
 			IO.close_in ch;
 			header , data
 		| Some h ->
-			let data = [tag (TSetBgColor { cr = 0xFF; cg = 0xFF; cb = 0xFF }) ] in
+			let data = [tag (TSetBgColor { cr = !bgcolor lsr 16; cg = (!bgcolor lsr 8) land 0xFF; cb = !bgcolor land 0xFF }) ] in
 			let data = data @ (Array.to_list (Array.init !frame (fun _ -> tag TShowFrame))) in
 			h , data)
 	in
+	let header = (if !flash6 then { header with h_version = 6 } else header) in
 	let ch = IO.output_channel (open_out_bin file) in
 	let found = ref false in
 	let curf = ref !frame in
@@ -1281,8 +1322,7 @@ let generate file ~compress exprs =
 let make_header s =
 	let sl = String.nsplit s ":" in
 	try
-		match sl with
-		| [w;h;fps] ->
+		let make w h fps =
 			let w = int_of_string w in
 			let h = int_of_string h in
 			{
@@ -1298,6 +1338,13 @@ let make_header s =
 				h_fps = to_float16 (float_of_string fps);
 				h_compressed = true;
 			}
+		in
+		match sl with
+		| [w;h;fps] ->
+			make w h fps
+		| [w;h;fps;color] ->
+			bgcolor := int_of_string ("0x" ^ color);
+			make w h fps;
 		| _ ->
 			raise Exit
 	with
@@ -1322,6 +1369,8 @@ Plugin.add [
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
 	("-separate",Arg.Unit (fun () -> separate := true),": separate classes into different clips");
 	("-exclude",Arg.String (fun f -> exclude_file f),"<file> : exclude classes listed in file");
+	("-flash6",Arg.Unit (fun () -> flash6 := true),": generate Flash6 bytecode");
+	("-trace",Arg.String (fun t -> ftrace := Some t),"<function> : specify a TRACE function");
 ]
 (fun t ->
 	match !swf with 
