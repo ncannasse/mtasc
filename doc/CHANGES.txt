@@ -11,6 +11,9 @@
 	added -flash6 for F6 compilation
 	added -trace for custom trace function
 	added optional color component for -header
+	(hotfixes)
+	fixed compiler crash in "try"
+	fixed boolean operators typing : returns most common type
 		
 2005-03-24 : 1.03
 	fixed "interface extends interface" bytecode generation

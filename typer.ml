@@ -197,6 +197,45 @@ let rec unify ta tb p =
 	| _ , _ ->
 		error (Cannot_unify (ta,tb)) p
 
+let rec tcommon ctx ta tb p =
+	match ta , tb with
+	| Void , Void -> Void
+	| Void , _
+	| _ , Void -> error (Cannot_unify (ta,tb)) p
+	| Dyn , _ | _ , Dyn -> Dyn
+	| Function _ , _ | Static _ , _ -> tcommon ctx (Class (!load_class_ref ctx ([],"Function") null_pos)) tb p
+	| _ , Function _ | _ , Static _ -> tcommon ctx ta (Class (!load_class_ref ctx ([],"Function") null_pos)) p
+	| Package _ , _  | _ , Package _  -> assert false
+	| Class a , Class b ->
+		let rec is_sub cl1 cl2 =
+			if cl1 == cl2 || List.exists (is_sub cl1) cl2.implements then
+				true
+			else if cl2.super == cl2 then
+				false
+			else
+				is_sub cl1 cl2.super
+		in
+		let rec parent cl1 cl2 =
+			if is_sub cl2 cl1 then
+				Some cl2
+			else
+				let rec loop = function
+					| [] -> if cl2.super == cl2 then None else parent cl1 cl2.super
+					| i :: l ->
+						match parent cl1 i with
+						| Some i -> Some i
+						| None -> loop l
+				in
+				loop cl2.implements
+		in
+		let p1 = parent a b in
+		let p2 = parent b a in
+		match p1 , p2 with
+		| None, None -> Class (!load_class_ref ctx ([],"Object") null_pos)
+		| Some a, None -> Class a
+		| None, Some b -> Class b
+		| Some a, Some b -> if is_sub a b then Class b else Class a
+
 let t_opt ctx p = function
 	| None -> if !strict_mode && not ctx.current.native then error (Custom "Type required in strict mode") p; Dyn
 	| Some ([],"Void") -> Void
@@ -225,7 +264,7 @@ let ret_opt ctx p f =
 		| ESwitch (_,cases,def) ->
 			List.exists (fun (_,e) -> has_return e) cases || (match def with None -> false | Some e -> has_return e)
 		| ETry (e,cl,fo) ->			
-			(has_return e) || List.exists (fun (_,_,e) -> has_return e) cl || (match fo with None -> false | Some e -> has_return e)
+			(has_return e) || List.exists (fun (_,_,e) -> has_return e) !cl || (match fo with None -> false | Some e -> has_return e)
 		| EWith (_,e) ->
 			has_return e
 		| EReturn (Some _ ) ->
@@ -515,13 +554,7 @@ let rec type_binop ctx op v1 v2 p =
 		ctx.ibool
 	| OpBoolAnd
 	| OpBoolOr ->
-		(try
-			unify t2 t1 p;
-			t1
-		with
-			_ -> 
-				unify t1 t2 p;
-				t2)
+		tcommon ctx t1 t2 p
 	| OpAssignOp op ->
 		let t = type_binop ctx op v1 v2 p in
 		unify t t1 p;
@@ -691,16 +724,15 @@ let rec type_expr ctx (e,p) =
 	| ETry (etry,cl,fo) ->
 		type_expr ctx etry;
 		let no_type = ref false in
-		let cl2 = List.map (fun (name,t,e) -> 
+		cl := List.map (fun (name,t,e) -> 
 			if !no_type then error (Custom "Misplaced catch will fail to catch any exception") (pos e);
-			let t2 = (match t with None -> no_type := true; None | Some c -> Some (resolve_path ctx c p)) in
+			let t2 = (match t with None -> no_type := true; None | Some c -> Some (resolve_path ctx c p).path ) in
 			let f = new_frame ctx in
 			define_local ctx name (t_opt ctx p t) p;
 			type_expr ctx e;
 			clean_frame ctx f;
 			name , t2 , e
-		) cl in
-		Obj.set_field (Obj.repr e) 2 (Obj.repr cl2);
+		) !cl;
 		(match fo with None -> () | Some e -> type_expr ctx e)
 	| EWith (v,e) ->
 		let old_with = ctx.curwith in

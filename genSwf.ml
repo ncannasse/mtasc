@@ -326,7 +326,7 @@ let rec used_in_block curblock vname e =
 		| ESwitch (v,cases,eopt) ->
 			vloop v || List.exists (fun (v,e) -> vloop v || loop e) cases || (match eopt with None -> false | Some e -> loop e)
 		| ETry (e,cl,fopt) ->
-			loop e || List.exists (fun (n,_,e) -> vname = n || loop e) cl || (match fopt with None -> false | Some e -> loop e)
+			loop e || List.exists (fun (n,_,e) -> vname = n || loop e) !cl || (match fopt with None -> false | Some e -> loop e)
 		| EWith (v,e) ->
 			vloop v || loop e
 		| EReturn (Some v) ->
@@ -958,13 +958,13 @@ let rec generate_expr ctx (e,p) =
 			next_catch();
 			Hashtbl.remove ctx.locals name;
 			j
-		) cl in
+		) !cl in
 		if !end_throw then begin
 			write ctx APop;
 			push ctx [VReg 0];
 			write ctx AThrow;
 		end;
-		if cl <> [] then tdata.tr_catchlen <- Some (ctx.code_pos - p);
+		if !cl <> [] then tdata.tr_catchlen <- Some (ctx.code_pos - p);
 		List.iter (fun j -> j()) jumps;
 		jump_end();
 		(match fo with
