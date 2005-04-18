@@ -703,7 +703,15 @@ let rec type_expr ctx (e,p) =
 		clean_frame ctx f
 	| EForIn (decl,v,e) ->
 		let f = new_frame ctx in
-		type_expr ctx decl;
+		(match decl with
+		| EVal ((EConst (Ident x),_) as v) , p ->
+			let t = type_val ctx v in
+			unify ctx.istring t p
+		| EVars (_,_,[x,t,None]) , p ->
+			unify ctx.istring (t_opt ctx p t) p;
+			define_local ctx x ctx.istring p
+		| _ ->
+			error (Custom "Invalid forin parameter") p);
 		no_void (type_val ctx v) (pos v);
 		type_expr ctx e;
 		clean_frame ctx f
