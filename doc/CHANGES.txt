@@ -1,3 +1,7 @@
+2005-05-?? : 1.05
+	fixed type required to String for for...in variable
+	fixed operator priority : a || b && c -> a || (b && c)
+
 2005-04-14 : 1.04
 	"for" optional first parameter and expression 
 	fixed while( o )++ i;

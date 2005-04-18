@@ -50,7 +50,7 @@ let is_not_assign = function
 
 let rec make_binop op e ((v,p2) as e2) =
 	match v with
-	| EBinop (_op,_e,_e2) when priority _op <= priority op && (is_not_assign _op || is_not_assign op) ->
+	| EBinop (_op,_e,_e2) when priority _op < priority op && (is_not_assign _op || is_not_assign op) ->
 		let _e = make_binop op e _e in
 		EBinop (_op,_e,_e2) , punion (pos _e) (pos _e2)
 	| EQuestion (_e,_e1,_e2) when is_not_assign op ->
