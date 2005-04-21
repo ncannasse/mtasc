@@ -18,6 +18,23 @@
  *)
 open Expr
 
+type import_path = {
+	mutable imp_used : bool;
+	imp_path : type_path;
+	imp_pos : pos;
+}
+
+type import_wild = {
+	mutable wimp_used : bool;
+	wimp_path : string list;
+	wimp_pos : pos;
+}
+
+type imports = {
+	paths : (string,import_path) Hashtbl.t;
+	mutable wildcards : import_wild list;
+}
+
 type type_decl =
 	| Void
 	| Dyn
@@ -32,11 +49,6 @@ and class_field = {
 	f_static : static_flag;
 	f_public : public_flag;
 	f_pos : pos;
-}
-
-and imports = {
-	paths : (string,type_path) Hashtbl.t;
-	mutable wildcards : string list list;
 }
 
 and class_context = {
@@ -147,12 +159,20 @@ let resolve_path ctx p pos =
 	| [] , n ->
 		let rec loop = function
 			| [] -> 
-				!load_class_ref ctx (try Hashtbl.find ctx.current.imports.paths n with Not_found -> p) pos
-			| pk :: l ->
-				try
-					!load_class_ref ctx (pk,n) pos
+				(try
+					let imp = Hashtbl.find ctx.current.imports.paths n in
+					let cl = !load_class_ref ctx imp.imp_path pos in
+					imp.imp_used <- true;
+					cl
 				with
-					Error (Class_not_found p,_) when p = (pk,n) -> loop l
+					Not_found -> !load_class_ref ctx p pos)
+			| imp :: l ->
+				try
+					let cl = !load_class_ref ctx (imp.wimp_path,n) pos in
+					imp.wimp_used <- true;
+					cl
+				with
+					Error (Class_not_found p,_) when p = (imp.wimp_path,n) -> loop l
 		in
 		loop ctx.current.imports.wildcards
 
@@ -231,7 +251,7 @@ let rec tcommon ctx ta tb p =
 		let p1 = parent a b in
 		let p2 = parent b a in
 		match p1 , p2 with
-		| None, None -> Class (!load_class_ref ctx ([],"Object") null_pos)
+		| None, None -> Class (t_object ctx)
 		| Some a, None -> Class a
 		| None, Some b -> Class b
 		| Some a, Some b -> if is_sub a b then Class b else Class a
@@ -498,14 +518,22 @@ let rec resolve_package ctx v (p : string list) pos =
 				(match last p with
 				| x when String.length x > 0 && x.[0] >= 'A' && x.[0] <= 'Z' -> error (Custom ("Unknown class " ^ String.concat "." p)) pos
 				| _ -> error (Custom ("Unknown variable " ^ List.hd p)) pos)
-			| p :: l ->
+			| (p,use) :: l ->
 				try 
-					search_package p
+					let r = search_package p in
+					use();
+					r
 				with
 					Exit -> loop l
 		in
-		let p2 , n = (try Hashtbl.find ctx.current.imports.paths cname with Not_found -> ([],cname)) in
-		loop ((p2 @ n :: fields) :: (List.map (fun p -> p @ cname :: fields) ctx.current.imports.wildcards))
+		let p2 , n , use = (try 
+			let imp = Hashtbl.find ctx.current.imports.paths cname in
+			fst imp.imp_path, snd imp.imp_path, (fun() -> imp.imp_used <- true)
+		with 
+			Not_found -> 
+				[] , cname, (fun() -> ())
+		) in
+		loop ((p2 @ n :: fields , use) :: (List.map (fun imp -> imp.wimp_path @ cname :: fields, (fun() -> imp.wimp_used <- true)) ctx.current.imports.wildcards))
 
 and type_field ctx t f p =
 	match resolve t f with
@@ -834,7 +862,7 @@ let type_class ctx cpath herits e imports file interf native s =
 		implements = [];
 		imports = imports;
 	} in
-	Hashtbl.add imports.paths clctx.name clctx.path;
+	Hashtbl.add imports.paths clctx.name { imp_path = clctx.path; imp_used = true; imp_pos = pos s };
 	Hashtbl.add ctx.classes cpath clctx;
 	ctx.current <- clctx;
 	let herits = List.map (function
@@ -847,7 +875,7 @@ let type_class ctx cpath herits e imports file interf native s =
 	let herits = (if is_component then HIntrinsic :: herits else herits) in
 	Obj.set_field (Obj.repr s) 0 (Obj.repr (if interf then EInterface (cpath,herits,e) else EClass (cpath,herits,e)));
 	let rec loop flag = function
-		| [] -> !load_class_ref ctx ([],"Object") (pos e)
+		| [] -> t_object ctx
 		| HExtends cpath :: l -> 
 			if flag then error (Custom "Multiple inheritance is not allowed") (pos e);
 			let cl = resolve_path ctx cpath (pos e) in
@@ -882,10 +910,8 @@ let type_file ctx req_path file el pos =
 	let clerror t p =
 		if pos = argv_pos then
 			()
-		else if pos = null_pos then
-			error (Class_name_mistake req_path) p
 		else
-			error (Class_name_mistake t) pos
+			error (Class_name_mistake req_path) p
 	in
 	List.iter (fun ((s,p) as sign) ->
 		match s with
@@ -899,11 +925,14 @@ let type_file ctx req_path file el pos =
 			clctx := Some (type_class ctx t hl e imports file true false sign)
 		| EImport (path,Some name) ->
 			if Hashtbl.mem imports.paths name then error (Custom "Duplicate Import") p;
-			add_finalizer ctx (fun () -> ignore(!load_class_ref ctx (path,name) p));
-			Hashtbl.add imports.paths name (path,name)
+			Hashtbl.add imports.paths name { imp_path = (path,name); imp_pos = p; imp_used = false }
 		| EImport (pk,None) ->
-			imports.wildcards <- pk :: imports.wildcards
+			imports.wildcards <- { wimp_path = pk; wimp_pos = p; wimp_used = false } :: imports.wildcards
 	) el;
+	add_finalizer ctx (fun () ->
+		Hashtbl.iter (fun _ imp -> if not imp.imp_used then (!Parser.warning) "import not used" imp.imp_pos) imports.paths;
+		List.iter (fun imp -> if not imp.wimp_used then (!Parser.warning) "import not used" imp.wimp_pos) imports.wildcards;
+	);
 	!clctx
 
 let load_file ctx file =	

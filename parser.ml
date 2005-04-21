@@ -25,6 +25,7 @@ type error_msg =
 
 exception Error of error_msg * pos
 
+let warning = ref (fun (msg : string) (p : pos) -> ())
 let use_components = ref false
 
 let error_msg = function
@@ -61,7 +62,6 @@ let can_swap _op op =
 let rec make_binop op e ((v,p2) as e2) =
 	match v with
 	| EBinop (_op,_e,_e2) when can_swap _op op && (is_not_assign _op || is_not_assign op) ->
-		prerr_endline "swap";
 		let _e = make_binop op e _e in
 		EBinop (_op,_e,_e2) , punion (pos _e) (pos _e2)
 	| EQuestion (_e,_e1,_e2) when is_not_assign op ->
@@ -339,7 +339,7 @@ and parse_include = parser
 	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String inc),p2) >] ->
 		let t = "ComponentVersion.as" in
 		let tl = String.length t in
-		if String.length inc < tl || String.sub inc (String.length inc - tl) tl <> t then print_endline ("Warning : unsupported #include in " ^ p1.pfile)
+		if String.length inc < tl || String.sub inc (String.length inc - tl) tl <> t then (!warning) "unsupported #include" (punion p1 p2)
 
 let parse code file =
 	let old = Lexer.save() in
