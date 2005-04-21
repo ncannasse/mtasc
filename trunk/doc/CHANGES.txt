@@ -1,6 +1,7 @@
 2005-05-?? : 1.05
 	fixed type required to String for for...in variable
 	fixed operator priority : a || b && c -> a || (b && c)
+	error when multiple extends, interface cannot extends class
 
 2005-04-14 : 1.04
 	"for" optional first parameter and expression 

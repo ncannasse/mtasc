@@ -846,12 +846,17 @@ let type_class ctx cpath herits e imports file interf native s =
 	let is_component = !use_components && (match clctx.path with ("mx" :: _ , _) -> true | _ -> false) in
 	let herits = (if is_component then HIntrinsic :: herits else herits) in
 	Obj.set_field (Obj.repr s) 0 (Obj.repr (if interf then EInterface (cpath,herits,e) else EClass (cpath,herits,e)));
-	let rec loop = function
+	let rec loop flag = function
 		| [] -> !load_class_ref ctx ([],"Object") (pos e)
-		| HExtends cpath :: _ -> resolve_path ctx cpath (pos e)
-		| _ :: l -> loop l
+		| HExtends cpath :: l -> 
+			if flag then error (Custom "Multiple inheritance is not allowed") (pos e);
+			let cl = resolve_path ctx cpath (pos e) in
+			if clctx.interface && not cl.interface then error (Custom "Interface cannot extends a class") (pos e);
+			ignore(loop true l);
+			cl
+		| _ :: l -> loop flag l
 	in	
-	clctx.super <- loop herits;
+	clctx.super <- loop false herits;
 	if clctx.super.interface && not clctx.interface then error (Custom "Cannot extends an interface") (pos e);
 	let rec loop = function
 		| [] -> []
