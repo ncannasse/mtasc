@@ -4,6 +4,8 @@
 	error when multiple extends, interface cannot extends class
 	warning when import not used (no longer add class)
 	fixed error message when class not found
+	register only one time the package
+	errors on 32K bytecode size limit reached
 
 2005-04-14 : 1.04
 	"for" optional first parameter and expression 

@@ -1031,13 +1031,16 @@ let generate_super_bindings ctx =
 		end;
 	) ctx.super_bindings
 
-let generate_class_code ctx clctx =
+let generate_class_code ctx clctx h =
 	let cpath , cname = Class.path clctx in
 	getvar ctx (generate_access ctx (EStatic (cpath,cname),null_pos));
 	write ctx ANot;
 	write ctx ANot;
 	let jump_end_def = cjmp ctx in
-	generate_package_register ctx cpath;
+	if not (Hashtbl.mem h cpath) then begin
+		generate_package_register ctx cpath;
+		Hashtbl.add h cpath ();
+	end;
 	let k = generate_package ctx cpath in
 	push ctx [VStr cname];
 	(match Class.constructor clctx with
@@ -1198,6 +1201,7 @@ let generate file ~compress exprs =
 	push ctx [VStr "Compiled with MTASC : http://tech.motion-twin.com"];
 	write ctx ATrace;
 	let tags = ref [] in
+	let hpackages = Hashtbl.create 0 in
 	Class.generate (fun clctx ->
 		ctx.current <- clctx;
 		let ctx = (if !separate then 
@@ -1217,7 +1221,7 @@ let generate file ~compress exprs =
 		) in
 		if not (Class.intrinsic clctx) && not (Hashtbl.mem excludes (s_type_path (Class.path clctx))) then begin
 			if !separate then DynArray.add ctx.ops (AStringPool []);
-			generate_class_code ctx clctx;
+			generate_class_code ctx clctx (if !separate then Hashtbl.create 0 else hpackages);
 			if !separate then tags := ("__Packages." ^ s_type_path (Class.path clctx),ctx.idents,ctx.ops) :: !tags;
 		end;
 	) exprs;	
@@ -1268,7 +1272,12 @@ let generate file ~compress exprs =
 			found := true;
 			let rec loop_tag cid = function
 				| [] -> List.rev (x @ acc) @ loop [] l
-				| (name,_,ops) :: l ->					
+				| (name,_,ops) :: l ->
+					let size = ActionScript.actions_length ops in
+					if size >= 1 lsl 15 then begin
+						if !separate then failwith ("Class " ^ String.sub name 11 (String.length name - 11) ^ " excess 32K bytecode limit, please split it");
+						failwith "Your classes excess 32K bytecode limit, please use -separate";
+					end;
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
 					tag ~ext:true (TDoInitAction { dia_id = cid; dia_actions = ops }) ::
