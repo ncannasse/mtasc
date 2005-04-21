@@ -101,7 +101,7 @@ let read_package path =
 	in
 	loop !Plugin.class_path
 
-let report (msg,p) etype printer =
+let report ?(do_exit=true) (msg,p) etype printer =
 	let error_printer file line =
 		match !print_style with
 		| StyleJava -> sprintf "%s:%d:" file line
@@ -109,7 +109,7 @@ let report (msg,p) etype printer =
 	in
 	let epos = Lexer.get_error_pos error_printer p in
 	prerr_endline (sprintf "%s : %s %s" epos etype (printer msg));
-	exit 1
+	if do_exit then exit 1
 ;;
 try	
 	let usage = "Motion-Twin ActionScript2 Compiler 1.04 - (c)2004-2005 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
@@ -131,6 +131,7 @@ try
 	] @ !Plugin.options in
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
 	Plugin.class_path := (base_path ^ "std/") :: !Plugin.class_path;
+	Parser.warning := (fun msg pos -> report ~do_exit:false (msg,pos) "Warning" (fun msg -> msg));
 	if !files = [] then begin
 		Arg.usage args_spec usage
 	end else begin
