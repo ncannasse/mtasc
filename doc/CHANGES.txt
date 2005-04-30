@@ -1,4 +1,4 @@
-2005-05-?? : 1.05
+2005-04-30 : 1.05
 	fixed type required to String for for...in variable
 	fixed operator priority : a || b && c -> a || (b && c)
 	error when multiple extends, interface cannot extends class
@@ -6,6 +6,10 @@
 	fixed error message when class not found
 	register only one time the package
 	errors on 32K bytecode size limit reached
+	fixed operators priority for | ^ & against >> and % against * /
+	forbid contructor returns and return type (modified headers)
+	fixed class ordering problem with -keep
+	fixed calls to super getter/setter problem
 
 2005-04-14 : 1.04
 	"for" optional first parameter and expression 
