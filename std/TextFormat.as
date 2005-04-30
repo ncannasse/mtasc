@@ -19,7 +19,7 @@ intrinsic class TextFormat
 	function TextFormat(font:String,size:Number,textColor:Number,
                     	bold:Boolean,italic:Boolean,underline:Boolean,
                     	url:String,window:String,align:String,
-                    	leftMargin:Number,rightMargin:Number,indent:Number,leading:Number) : Void;
+                    	leftMargin:Number,rightMargin:Number,indent:Number,leading:Number);
 	function getTextExtent(text:String):Object;
 }
 

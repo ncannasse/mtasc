@@ -11,7 +11,7 @@ intrinsic class XMLNode
 	var parentNode:XMLNode;
 	var previousSibling:XMLNode;
 
-	function XMLNode(type:Number, value:String) : Void;
+	function XMLNode(type:Number, value:String);
 
 	function cloneNode(deep:Boolean):XMLNode;
 	function removeNode():Void;
