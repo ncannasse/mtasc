@@ -26,6 +26,7 @@ type kind =
 	| VarReg of int
 	| VarStr
 	| VarObj
+	| VarGetSet of string
 
 type local_ctx = {
 	reg : int;
@@ -126,6 +127,8 @@ let call ctx kind n =
 			ACall , n + 1
 		| VarObj ->
 			AObjCall , n + 2
+		| VarGetSet s ->
+			assert false
 	) in
 	DynArray.add ctx.ops op;
 	ctx.opt_push <- false;
@@ -140,7 +143,10 @@ let new_call ctx kind n  =
 		| VarStr -> 
 			ANew , n + 1
 		| VarObj ->
-			ANewMethod , n + 2) in
+			ANewMethod , n + 2
+		| VarGetSet _ ->
+			assert false
+	) in
 	DynArray.add ctx.ops op;
 	ctx.opt_push <- false;
 	ctx.code_pos <- ctx.code_pos + 1;
@@ -236,12 +242,18 @@ let setvar ?(retval=false) ctx = function
 		if retval then write ctx (ASetReg 0);
 		write ctx (if s = VarStr then ASet else AObjSet);
 		if retval then push ctx [VReg 0]
+	| VarGetSet f ->
+		push ctx [VInt 1; VSuper; VStr ("__set__" ^ f)];
+		call ctx VarObj 1
 
 let getvar ctx = function
 	| VarReg (-1) -> () (** true, false, null **)
 	| VarReg n -> push ctx [VReg n]
 	| VarStr -> write ctx AEval
 	| VarObj -> write ctx AObjGet
+	| VarGetSet f ->
+		push ctx [VInt 0; VSuper; VStr ("__get__" ^ f)];
+		call ctx VarObj 0
 
 let clean_stack ctx stack =
 	Hashtbl.iter (fun name r ->
@@ -459,6 +471,8 @@ let rec generate_access ?(forcall=false) ctx (v,p) =
 			VarReg 2
 	| EConst (Ident s) ->
 		generate_ident ctx s p
+	| EField ((EConst (Ident "super"),_),s) when Class.is_getset ctx.current s ->
+		VarGetSet s
 	| EField (v,s) ->
 		generate_val ctx v;
 		push ctx [VStr s];
@@ -1321,7 +1335,7 @@ let generate file ~compress exprs =
 				_ -> 
 					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then prerr_endline ("Warning : Missing class " ^ clname ^ " required by MovieClip " ^ mcname ^ " with registerClass"));
 			| _ -> ());
-			loop (x :: acc) l
+			x :: loop acc l
 		| x :: l ->
 			x :: loop acc l
 	in
