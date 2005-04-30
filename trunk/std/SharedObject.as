@@ -5,7 +5,7 @@ intrinsic class SharedObject
 	static function deleteAll(url:String);
 	static function getDiskUsage(url:String);
 
-	//function connect(myConnection:NetConnection):Boolean;
+	function connect(myConnection:NetConnection):Boolean;
 	function send(handlerName:String):Void;
 	function flush(minDiskSpace:Number):Object;
 	function close():Void;

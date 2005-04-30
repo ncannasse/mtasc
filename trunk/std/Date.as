@@ -1,6 +1,6 @@
 intrinsic class Date
 {
-	function Date(year:Number,month:Number,date:Number,hour:Number,min:Number,sec:Number,ms:Number) : Void;
+	function Date(year:Number,month:Number,date:Number,hour:Number,min:Number,sec:Number,ms:Number);
 
 	function getFullYear():Number;
 	function getYear():Number;
