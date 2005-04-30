@@ -261,37 +261,39 @@ let t_opt ctx p = function
 	| Some ([],"Void") -> Void
 	| Some t -> Class (resolve_path ctx t p)
 
+let rec has_return any (e,p) =
+	let has_return = has_return any in
+	match e with
+	| EVars _ 
+	| EFunction _ 
+	| EBreak
+	| EContinue
+	| EVal _ ->
+		false
+	| EReturn None
+		-> any
+	| EBlock el ->
+		List.exists has_return el
+	| EFor (el,_,_,e) ->
+		List.exists has_return (e::el)
+	| EForIn (e1,_,e2) ->
+		has_return e1 || has_return e2
+	| EIf (_,e,eo) ->
+		has_return e || (match eo with None -> false | Some e -> has_return e)
+	| EWhile (_,e,_) ->
+		has_return e
+	| ESwitch (_,cases,def) ->
+		List.exists (fun (_,e) -> has_return e) cases || (match def with None -> false | Some e -> has_return e)
+	| ETry (e,cl,fo) ->			
+		(has_return e) || List.exists (fun (_,_,e) -> has_return e) !cl || (match fo with None -> false | Some e -> has_return e)
+	| EWith (_,e) ->
+		has_return e
+	| EReturn (Some _ ) ->
+		true
+
 let ret_opt ctx p f =
-	let rec has_return (e,p) =
-		match e with
-		| EVars _ 
-		| EFunction _ 
-		| EBreak
-		| EContinue
-		| EVal _
-		| EReturn None
-			-> false
-		| EBlock el ->
-			List.exists has_return el
-		| EFor (el,_,_,e) ->
-			List.exists has_return (e::el)
-		| EForIn (e1,_,e2) ->
-			has_return e1 || has_return e2
-		| EIf (_,e,eo) ->
-			has_return e || (match eo with None -> false | Some e -> has_return e)
-		| EWhile (_,e,_) ->
-			has_return e
-		| ESwitch (_,cases,def) ->
-			List.exists (fun (_,e) -> has_return e) cases || (match def with None -> false | Some e -> has_return e)
-		| ETry (e,cl,fo) ->			
-			(has_return e) || List.exists (fun (_,_,e) -> has_return e) !cl || (match fo with None -> false | Some e -> has_return e)
-		| EWith (_,e) ->
-			has_return e
-		| EReturn (Some _ ) ->
-			true
-	in
 	match f.fexpr with
-	| Some e when not (has_return e) -> 
+	| Some e when not (has_return false e) -> 
 		(match f.ftype with
 		| None | Some ([],"Void") -> Void
 		| Some cp -> error (Custom ("Missing return of type " ^ s_type_path cp)) p)
@@ -837,6 +839,8 @@ let rec type_class_fields ctx clctx comp (e,p) =
 	| EFunction f -> 
 		let t = Function (List.map (fun (_,t) -> t_opt ctx p t) f.fargs , ret_opt ctx p f) in
 		if f.fname = snd clctx.path then begin
+			if f.ftype <> None then error (Custom "Constructor return type should not be specified") p;
+			(match f.fexpr with None -> () | Some e -> if has_return true e then error (Custom "Constructor should not return any value") p);
 			match clctx.constructor with
 			| None -> clctx.constructor <- Some { f_name = f.fname;	f_type = t; f_static = IsMember; f_public = f.fpublic; f_pos = null_pos }
 			| Some _ -> error (Custom "Duplicate constructor") p;
