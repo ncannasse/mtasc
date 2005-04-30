@@ -96,6 +96,12 @@ let interface clctx =
 let interfaces clctx =
 	clctx.interfaces
 
+let is_getset clctx v =
+	match clctx.superclass with
+	| None -> false
+	| Some c ->
+		List.exists (fun f -> f.fname = v && f.fgetter <> Normal) c.methods
+
 let rec resolve_supervar c name =
 	match c.superclass with
 	| None -> 
