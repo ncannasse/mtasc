@@ -10,6 +10,11 @@
 	forbid contructor returns and return type (modified headers)
 	fixed class ordering problem with -keep
 	fixed calls to super getter/setter problem
+	(hotfixes)
+	remove "return" in contructors restriction (allowed by MMC)
+	import warnings disabled for mx classes when -mx
+	fixed missing "," between function call parameters
+	
 
 2005-04-14 : 1.04
 	"for" optional first parameter and expression 
