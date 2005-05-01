@@ -232,7 +232,11 @@ and parse_eval_option p = parser
 	| [< >] -> None, p
 
 and parse_eval_list = parser
-	| [< v = parse_eval; vl = parse_eval_list >] -> v :: vl
+	| [< v = parse_eval; vl = parse_eval_list2 >] -> v :: vl
+	| [< '(Next,_) >] -> []
+	| [< >] -> []
+
+and parse_eval_list2 = parser
 	| [< '(Sep,_); vl = parse_eval_list >] -> vl
 	| [< '(Next,_) >] -> []
 	| [< >] -> []
