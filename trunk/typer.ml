@@ -840,7 +840,6 @@ let rec type_class_fields ctx clctx comp (e,p) =
 		let t = Function (List.map (fun (_,t) -> t_opt ctx p t) f.fargs , ret_opt ctx p f) in
 		if f.fname = snd clctx.path then begin
 			if f.ftype <> None then error (Custom "Constructor return type should not be specified") p;
-			(match f.fexpr with None -> () | Some e -> if has_return true e then error (Custom "Constructor should not return any value") p);
 			match clctx.constructor with
 			| None -> clctx.constructor <- Some { f_name = f.fname;	f_type = t; f_static = IsMember; f_public = f.fpublic; f_pos = null_pos }
 			| Some _ -> error (Custom "Duplicate constructor") p;
@@ -933,10 +932,11 @@ let type_file ctx req_path file el pos =
 		| EImport (pk,None) ->
 			imports.wildcards <- { wimp_path = pk; wimp_pos = p; wimp_used = false } :: imports.wildcards
 	) el;
-	add_finalizer ctx (fun () ->
-		Hashtbl.iter (fun _ imp -> if not imp.imp_used then (!Parser.warning) "import not used" imp.imp_pos) imports.paths;
-		List.iter (fun imp -> if not imp.wimp_used then (!Parser.warning) "import not used" imp.wimp_pos) imports.wildcards;
-	);
+	if not !use_components || (match !clctx with Some { path = "mx" :: _ , _ } -> false | _ -> true) then
+		add_finalizer ctx (fun () ->
+			Hashtbl.iter (fun _ imp -> if not imp.imp_used then (!Parser.warning) "import not used" imp.imp_pos) imports.paths;
+			List.iter (fun imp -> if not imp.wimp_used then (!Parser.warning) "import not used" imp.wimp_pos) imports.wildcards;
+		);
 	!clctx
 
 let load_file ctx file =	
