@@ -1266,7 +1266,7 @@ let generate file ~compress exprs =
 	let header , data = (match !header with
 		| None ->
 			let ch = IO.input_channel (open_in_bin file) in
-			let header, data = Swf.parse ch in
+			let header, data = (try Swf.parse ch with IO.No_more_input -> failwith "Input swf is corrupted") in
 			IO.close_in ch;
 			header , data
 		| Some h ->
@@ -1275,7 +1275,6 @@ let generate file ~compress exprs =
 			h , data)
 	in
 	let header = (if !flash6 then { header with h_version = 6 } else header) in
-	let ch = IO.output_channel (open_out_bin file) in
 	let found = ref false in
 	let curf = ref !frame in
 	let insert loop acc x l =
@@ -1339,6 +1338,7 @@ let generate file ~compress exprs =
 		| x :: l ->
 			x :: loop acc l
 	in
+	let ch = IO.output_channel (open_out_bin file) in
 	Swf.write ch (header,loop [] data);
 	IO.close_out ch
 
