@@ -1235,10 +1235,11 @@ let generate file ~compress exprs =
 		) in
 		if not (Class.intrinsic clctx) && not (Hashtbl.mem excludes (s_type_path (Class.path clctx))) then begin
 			if !separate then DynArray.add ctx.ops (AStringPool []);
+			let ssize = ActionScript.actions_length ctx.ops in
 			generate_class_code ctx clctx (if !separate then Hashtbl.create 0 else hpackages);
 			if !separate then tags := ("__Packages." ^ s_type_path (Class.path clctx),ctx.idents,ctx.ops) :: !tags;
 			let size = ActionScript.actions_length ctx.ops in
-			if size >= 1 lsl 15 then failwith ("Class " ^ s_type_path (Class.path clctx) ^ " excess 32K bytecode limit, please split it");
+			if size - ssize >= 1 lsl 15 then failwith ("Class " ^ s_type_path (Class.path clctx) ^ " excess 32K bytecode limit, please split it");
 		end;
 	) exprs;	
 	(match !(ctx.main) with
