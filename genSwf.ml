@@ -1237,6 +1237,8 @@ let generate file ~compress exprs =
 			if !separate then DynArray.add ctx.ops (AStringPool []);
 			generate_class_code ctx clctx (if !separate then Hashtbl.create 0 else hpackages);
 			if !separate then tags := ("__Packages." ^ s_type_path (Class.path clctx),ctx.idents,ctx.ops) :: !tags;
+			let size = ActionScript.actions_length ctx.ops in
+			if size >= 1 lsl 15 then failwith ("Class " ^ s_type_path (Class.path clctx) ^ " excess 32K bytecode limit, please split it");
 		end;
 	) exprs;	
 	(match !(ctx.main) with
@@ -1286,11 +1288,6 @@ let generate file ~compress exprs =
 			let rec loop_tag cid = function
 				| [] -> List.rev (x @ acc) @ loop [] l
 				| (name,_,ops) :: l ->
-					let size = ActionScript.actions_length ops in
-					if size >= 1 lsl 15 then begin
-						if !separate then failwith ("Class " ^ String.sub name 11 (String.length name - 11) ^ " excess 32K bytecode limit, please split it");
-						failwith "Your classes excess 32K bytecode limit, please use -separate";
-					end;
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
 					tag ~ext:true (TDoInitAction { dia_id = cid; dia_actions = ops }) ::
