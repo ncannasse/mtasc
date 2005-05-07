@@ -1,3 +1,6 @@
+2005-05-?? : 1.06
+	fixed IO.No_more_input message
+	
 2005-04-30 : 1.05
 	fixed type required to String for for...in variable
 	fixed operator priority : a || b && c -> a || (b && c)
