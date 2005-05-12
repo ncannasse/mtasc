@@ -1331,8 +1331,9 @@ let generate file ~compress exprs =
 				with
 				_ -> 
 					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then prerr_endline ("Warning : Missing class " ^ clname ^ " required by MovieClip " ^ mcname ^ " with registerClass"));
-			| _ -> ());
-			x :: loop acc l
+				loop (x :: acc) l
+			| _ ->
+				x :: loop acc l);
 		| x :: l ->
 			x :: loop acc l
 	in
