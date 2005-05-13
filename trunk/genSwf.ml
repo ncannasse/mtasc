@@ -1183,6 +1183,19 @@ let frame = ref 1
 let header = ref None
 let excludes = Hashtbl.create 0
 
+let new_context ctx =
+	{ ctx with
+		idents = Hashtbl.create 0;
+		locals = Hashtbl.create 0;
+		stack_size = 0;
+		ops = DynArray.create();
+		code_pos = 1;
+		ident_count = 0;
+		stack = 0;
+		reg_count = 0;
+		opt_push = false;
+	}
+
 let generate file ~compress exprs =
 	let file , linkage =
 		(try
@@ -1218,21 +1231,7 @@ let generate file ~compress exprs =
 	let hpackages = Hashtbl.create 0 in
 	Class.generate (fun clctx ->
 		ctx.current <- clctx;
-		let ctx = (if !separate then 
-				{ ctx with
-					idents = Hashtbl.create 0;
-					locals = Hashtbl.create 0;
-					stack_size = 0;
-					ops = DynArray.create();
-					code_pos = 1;
-					ident_count = 0;
-					stack = 0;
-					reg_count = 0;
-					opt_push = false;
-				}
-			else 
-				ctx
-		) in
+		let ctx = (if !separate then new_context ctx else ctx) in
 		if not (Class.intrinsic clctx) && not (Hashtbl.mem excludes (s_type_path (Class.path clctx))) then begin
 			if !separate then DynArray.add ctx.ops (AStringPool []);
 			let ssize = ActionScript.actions_length ctx.ops in
@@ -1242,19 +1241,53 @@ let generate file ~compress exprs =
 			if size - ssize >= 1 lsl 15 then failwith ("Class " ^ s_type_path (Class.path clctx) ^ " excess 32K bytecode limit, please split it");
 		end;
 	) exprs;	
+	if not !separate then tags := ("__Packages.MTASC",ctx.idents,ctx.ops) :: !tags;
 	(match !(ctx.main) with
 	| None ->
 		if !enable_main then failwith "Main entry point not found";
 	| Some (p,clname) -> 
-		push ctx [VInt 0];
+		let ctx = new_context ctx in 
+		DynArray.add ctx.ops (AStringPool []);
+		(*// var old = this.onEnterFrame *)
+		push ctx [VStr "old";VStr "this"];
+		write ctx AEval;
+		push ctx [VStr "onEnterFrame"];
+		write ctx AObjGet;
+		write ctx ALocalAssign;
+		(*// this.onEnterFrame =  *)
+		push ctx [VStr "this"];
+		write ctx AEval;
+		push ctx [VStr "onEnterFrame"];
+		ctx.reg_count <- 1;
+		(*// function { *)
+		let fdone = func ctx [] false false in
+		(*//    this.onEnterFrame = old; *)
+		push ctx [VThis];
+		write ctx AEval;
+		push ctx [VStr "onEnterFrame"; VStr "old"];
+		write ctx AEval;
+		write ctx AObjSet;
+		(*//    (main class).main(this); *)
+		push ctx [VThis];
+		write ctx AEval;
+		push ctx [VInt 1];
 		let k = generate_package ~fast:true ctx p in
 		push ctx [VStr clname];
 		getvar ctx k;
 		push ctx [VStr "main"];
-		call ctx VarObj 0;
+		call ctx VarObj 1;
 		write ctx APop;
+		(*//    old.apply(this); *)
+		push ctx [VThis; VInt 1; VStr "old"];
+		write ctx AEval;
+		push ctx [VStr "apply"];
+		call ctx VarObj 1;
+		write ctx APop;
+		fdone (ctx.reg_count + 1);
+		(*// } *)
+		write ctx AObjSet;
+		tags := ("__Packages.MTASC.main",ctx.idents,ctx.ops) :: !tags;
 	);
-	tags := ("__Packages.MTASC",ctx.idents,ctx.ops) :: !tags;
 	tags := List.rev !tags;
 	List.iter (fun (n,idents,ops) ->
 		let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) idents [] in
@@ -1288,6 +1321,9 @@ let generate file ~compress exprs =
 			found := true;
 			let rec loop_tag cid = function
 				| [] -> List.rev (x @ acc) @ loop [] l
+				| ("__Packages.MTASC.main",_,ops) :: l ->
+					tag ~ext:true (TDoAction ops) ::
+					loop_tag cid l
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::

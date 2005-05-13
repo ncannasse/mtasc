@@ -2,6 +2,7 @@
 	fixed IO.No_more_input message
 	fixed 32K limit calculation
 	fixed bug with auto register class
+	main now takes "this" as parameter and is delayed (onEnterFrame)
 	
 2005-04-30 : 1.05
 	fixed type required to String for for...in variable
