@@ -5,7 +5,7 @@ dynamic intrinsic class Object
 	function addProperty(name:String, getter:Function, setter:Function):Boolean;
 	function hasOwnProperty(name:String):Boolean;
 	function toString():String;
-
+	function valueOf():Object;
 
 	var __proto__;
 	var constructor : Function;
