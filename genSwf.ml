@@ -447,8 +447,8 @@ let unescape_chars s =
 	let s = String.concat "\\" (String.nsplit s "\\\\") in
 	s
 
-let generate_constant ctx p = function
-	| Int str -> push ctx [VInt32 (try Int32.of_string str with _ -> error p)]
+let rec generate_constant ctx p = function
+	| Int str -> (try push ctx [VInt32 (Int32.of_string str)] with _ -> generate_constant ctx p (Float str))
 	| Float str -> push ctx [VFloat (try float_of_string str with _ -> error p)]
 	| String s -> push ctx [VStr (unescape_chars s)]
 	| Ident s -> assert false
@@ -727,8 +727,11 @@ and generate_val ?(retval=true) ctx (v,p) =
 	| EUnop (Not,_,v) -> 
 		generate_val ctx v;
 		write ctx ANot
-	| EUnop (Neg,_,(EConst (Int s),p)) ->		
-		push ctx [VInt32 (Int32.neg (try Int32.of_string s with _ -> error p))]
+	| EUnop (Neg,x,(EConst (Int s),p2)) ->
+		(try
+			push ctx [VInt32 (Int32.neg (Int32.of_string s))]
+		with
+			_ -> generate_val ctx (EUnop (Neg,x,(EConst (Float s),p2)),p))
 	| EUnop (Neg,_,(EConst (Float f),p)) ->
 		push ctx [VFloat (0. -. (try float_of_string f with _ -> error p))]
 	| EUnop (Neg,_,v) ->
