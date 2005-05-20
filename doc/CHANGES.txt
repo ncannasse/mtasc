@@ -1,4 +1,4 @@
-2005-05-?? : 1.06
+2005-05-20 : 1.06
 	fixed IO.No_more_input message
 	fixed 32K limit calculation
 	fixed bug with auto register class
