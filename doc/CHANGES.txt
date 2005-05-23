@@ -1,3 +1,6 @@
+2005-06-?? : 1.07
+	fixed -keep + -main
+
 2005-05-20 : 1.06
 	fixed IO.No_more_input message
 	fixed 32K limit calculation
