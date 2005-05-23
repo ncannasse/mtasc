@@ -1345,7 +1345,7 @@ let generate file ~compress exprs =
 		| ({ tdata = TShowFrame } as x) :: l ->
 			insert loop acc [x] l
 		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l when
-			(not !keep || e = "__Packages.MTASC") &&
+			(not !keep || e = "__Packages.MTASC" || e = "__Packages.MTASC.main") &&
 			String.length e > 11 &&
 			String.sub e 0 11 = "__Packages."
 			->
