@@ -1,5 +1,7 @@
 2005-06-?? : 1.07
 	fixed -keep + -main
+	added 'con' error message
+	SharedObject.getRemote argument to Object.
 
 2005-05-20 : 1.06
 	fixed IO.No_more_input message
