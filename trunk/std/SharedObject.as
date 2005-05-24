@@ -1,7 +1,7 @@
 intrinsic class SharedObject
 {
 	static function getLocal(name:String,localPath:String):SharedObject;
-	static function getRemote(name:String,remotePath:String,persistence:Boolean):SharedObject;
+	static function getRemote(name:String,remotePath:String,persistence:Object):SharedObject;
 	static function deleteAll(url:String);
 	static function getDiskUsage(url:String);
 
