@@ -968,6 +968,7 @@ let load_class ctx path p =
 		Hashtbl.find ctx.classes path
 	with
 		Not_found ->
+			if String.lowercase (snd path) = "con" then error (Custom "CON is a special file under Windows and shouldn't be used as class name") p;
 			let file_name = (match fst path with
 				 | [] -> snd path ^ ".as"
 				 | _ -> String.concat "/" (fst path) ^ "/" ^ snd path ^ ".as")
