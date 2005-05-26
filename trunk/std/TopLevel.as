@@ -38,6 +38,6 @@ intrinsic class TopLevel {
 	private static var arguments : FunctionArguments;
 	private static function throw(x) : Void;
 	private static function fscommand(x,y) : Void;
-	private static function print(x,y) : Void;
+	private static function print(x,y : String) : Void;
 
 }
