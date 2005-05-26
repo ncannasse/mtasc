@@ -647,6 +647,16 @@ and generate_call ?(newcall=false) ctx v vl =
 		write ctx AStringAdd;
 		generate_val ctx v2;
 		write ctx (AGetURL2 0)
+	| EConst (Ident "print") , [v1;v2] ->
+		let str = (match fst v2 with 
+			| EConst (String "bmovie") -> "print:"
+			| EConst (String "bframe") -> "print:#bframe"
+			| EConst (String "bmax") -> "print:#bmax"
+			| _ -> 	raise (Typer.Error (Typer.Custom "print parameter should be either bmovie, bframe or bmax",pos v2))
+		) in
+		push ctx [VStr str];
+		generate_val ctx v1;
+		write ctx (AGetURL2 0)
 	| EConst (Ident ("getURL" as x)) , params
 	| EConst (Ident ("loadMovie" as x)) , params
 	| EConst (Ident ("loadVariables" as x)) , params ->
