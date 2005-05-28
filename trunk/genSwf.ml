@@ -1334,9 +1334,6 @@ let generate file ~compress exprs =
 			found := true;
 			let rec loop_tag cid = function
 				| [] -> List.rev (x @ acc) @ loop [] l
-				| ("__Packages.MTASC.main",_,ops) :: l ->
-					tag ~ext:true (TDoAction ops) ::
-					loop_tag cid l
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
