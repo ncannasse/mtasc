@@ -4,6 +4,10 @@
 	SharedObject.getRemote argument to Object.
 	added "print".
 	added deprecated keywords usage error.
+	fixed "main" duplication
+	added / to classpath (for absolute file paths)
+	fixed for(;cond;incr) parsing error
+	fixed (unop) expr ? parsing error
 
 2005-05-20 : 1.06
 	fixed IO.No_more_input message
