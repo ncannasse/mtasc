@@ -73,6 +73,9 @@ let rec make_binop op e ((v,p2) as e2) =
 let rec make_unop op ((v,p2) as e) p1 = 
 	match v with
 	| EBinop (bop,e,e2) -> EBinop (bop, make_unop op e p1 , e2) , (punion p1 p2)
+	| EQuestion (_e,_e1,_e2) ->
+		let _e = make_unop op _e p1 in
+		EQuestion ( _e, _e1, _e2) , punion p1 (pos _e2)
 	| _ ->
 		EUnop (op,Prefix,e), punion p1 p2
 
@@ -223,10 +226,6 @@ and parse_finally = parser
 	| [< '(Kwd Finally,_); e = parse_expr >] -> Some e
 	| [< >] -> None
 
-and parse_expr_option p = parser
-	| [< e = parse_expr >] -> Some e , pos e
-	| [< >] -> None, p
-
 and parse_eval_option p = parser
 	| [< v = parse_eval >] -> Some v , pos v
 	| [< >] -> None, p
@@ -267,6 +266,7 @@ and parse_for p c = parser
 and parse_for_conds = parser
 	| [< '(Sep,_); e = parse_expr; l = parse_for_conds >] -> e :: l
 	| [< '(Next,_) >] -> []
+	| [< >] -> []
 
 and parse_args = parser
 	| [< '(Const (Ident name),_); t = parse_type_option; al , p = parse_args >] -> (name , t) :: al , p
