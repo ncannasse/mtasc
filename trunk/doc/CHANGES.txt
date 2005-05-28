@@ -1,4 +1,4 @@
-2005-06-?? : 1.07
+2005-05-28 : 1.07
 	fixed -keep + -main
 	added 'con' error message
 	SharedObject.getRemote argument to Object.
