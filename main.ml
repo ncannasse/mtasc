@@ -116,7 +116,7 @@ try
 	let base_path = normalize_path (try Extc.executable_path() with _ -> ".") in
 	let files = ref [] in
 	let time = Sys.time() in
-	Plugin.class_path := [base_path;""];
+	Plugin.class_path := [base_path;"";"/"];
 	let args_spec = [
 		("-pack",Arg.String (fun path -> files := read_package path @ !files),"<path> : compile all files in target package");
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
