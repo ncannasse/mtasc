@@ -84,7 +84,7 @@ let stack_delta = function
 	| ALocalVar -> -1
 	| ALocalAssign -> -2
 	| AReturn -> -1
-	| AGetURL2 _ -> -1
+	| AGetURL2 _ -> -2
 	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
 	| AEnum2 | ATrace | AThrow -> -1
