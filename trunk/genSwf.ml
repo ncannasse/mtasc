@@ -1261,8 +1261,9 @@ let generate file ~compress exprs =
 	| Some (p,clname) -> 
 		let ctx = new_context ctx in 
 		DynArray.add ctx.ops (AStringPool []);
+		let sold = "$mtasc_main_save" in
 		(*// var old = this.onEnterFrame *)
-		push ctx [VStr "old";VStr "this"];
+		push ctx [VStr sold;VStr "this"];
 		write ctx AEval;
 		push ctx [VStr "onEnterFrame"];
 		write ctx AObjGet;
@@ -1277,7 +1278,7 @@ let generate file ~compress exprs =
 		(*//    this.onEnterFrame = old; *)
 		push ctx [VThis];
 		write ctx AEval;
-		push ctx [VStr "onEnterFrame"; VStr "old"];
+		push ctx [VStr "onEnterFrame"; VStr sold];
 		write ctx AEval;
 		write ctx AObjSet;
 		(*//    (main class).main(this); *)
@@ -1291,7 +1292,7 @@ let generate file ~compress exprs =
 		call ctx VarObj 1;
 		write ctx APop;
 		(*//    old.apply(this); *)
-		push ctx [VThis; VInt 1; VStr "old"];
+		push ctx [VThis; VInt 1; VStr sold];
 		write ctx AEval;
 		push ctx [VStr "apply"];
 		call ctx VarObj 1;
@@ -1299,6 +1300,9 @@ let generate file ~compress exprs =
 		fdone (ctx.reg_count + 1);
 		(*// } *)
 		write ctx AObjSet;
+		push ctx [VInt 1; VStr sold; VThis; VInt 3; VStr "ASSetPropFlags"];
+		call ctx VarStr 3;
+		write ctx APop;
 		tags := ("__Packages.MTASC.main",ctx.idents,ctx.ops) :: !tags;
 	);
 	tags := List.rev !tags;
