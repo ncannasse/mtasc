@@ -202,6 +202,7 @@ and parse_eval_next e = parser
 		let iof v = ECall ((EConst (Ident "instanceof"), p),[e;v]) , punion (pos e) (pos v) in
 		let rec loop = function			
 			| EBinop (op,e1,e2) , pv -> EBinop (op,loop e1,e2) , punion p pv
+			| EQuestion (e,e1,e2) , pv -> EQuestion(loop e,e1,e2) , punion p pv
 			| v -> iof v
 		in
 		parse_eval_next (loop v) s
