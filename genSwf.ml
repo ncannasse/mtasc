@@ -986,7 +986,7 @@ let rec generate_expr ctx (e,p) =
 			Hashtbl.remove ctx.locals name;
 			j
 		) !cl in
-		if !end_throw then begin
+		if !end_throw && !cl <> [] then begin
 			write ctx APop;
 			push ctx [VReg 0];
 			write ctx AThrow;
