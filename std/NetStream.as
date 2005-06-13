@@ -1,4 +1,4 @@
-intrinsic class NetStream
+﻿intrinsic class NetStream
 {
 	var time:Number;
 	var currentFps:Number;
@@ -9,7 +9,7 @@ intrinsic class NetStream
 	var bytesTotal:Number;
 
 	function NetStream(connection:NetConnection);
-	function onResult(streamId:Number);
+  function onMetaData(info:Object):Void;
 	function onStatus(info:Object):Void;
 	function publish(name:Object, type:String):Void;
 	function play(name:Object, start:Number, len:Number, reset:Object);
@@ -21,7 +21,7 @@ intrinsic class NetStream
 	function attachAudio(theMicrophone:Microphone):Void;
 	function attachVideo(theCamera:Camera,snapshotMilliseconds:Number):Void;
 	function send(handlerName:String):Void;
-	function setBufferTime(bufferTime:Number);
+	function setBufferTime(bufferTime:Number):Void;
 }
 
 

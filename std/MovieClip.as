@@ -1,4 +1,4 @@
-dynamic intrinsic class MovieClip
+﻿dynamic intrinsic class MovieClip
 {
 	var useHandCursor:Boolean;
 	var enabled:Boolean;
@@ -32,7 +32,8 @@ dynamic intrinsic class MovieClip
 	var _soundbuftime:Number;
 	var _url:String;
 	var _parent:MovieClip;
-
+	var menu:ContextMenu;
+	
 	function getURL(url:String,window:String,method:String):Void;
 	function unloadMovie():Void;
 	function loadVariables(url:String,method:String):Void;
@@ -71,6 +72,7 @@ dynamic intrinsic class MovieClip
 	function endFill():Void;
 	function clear():Void;
 	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):Void;
+	function getTextSnapshot():TextSnapshot;
 
 	function onData():Void;
 	function onDragOut():Void;

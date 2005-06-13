@@ -1,5 +1,8 @@
 intrinsic class XMLSocket
 {
+
+	function XMLSocket();
+
 	function connect(url:String,port:Number):Boolean;
 	function send(data:Object):Boolean;
 	function close():Boolean;

@@ -1,4 +1,4 @@
-intrinsic class Selection
+﻿intrinsic class Selection
 {
 	static function getBeginIndex():Number;
 	static function getEndIndex():Number;
@@ -8,8 +8,6 @@ intrinsic class Selection
 	static function setSelection(beginIndex:Number, endIndex:Number):Void;
 	static function addListener(listener:Object):Void;
 	static function removeListener(listener:Object):Boolean;
-
-	function onSetFocus(oldFocus:Object, newFocus:Object):Void;
 }
 
 

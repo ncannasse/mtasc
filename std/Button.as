@@ -28,6 +28,7 @@ intrinsic class Button
 	var tabEnabled:Boolean;
 	var tabIndex:Number;
 	var trackAsMenu:Boolean;
+	var menu:ContextMenu;
 
 	function getDepth():Number;
 

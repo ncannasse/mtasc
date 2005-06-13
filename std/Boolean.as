@@ -1,5 +1,5 @@
 intrinsic class Boolean
 {
-	function valueOf():Number;
+	function valueOf():Boolean;
 }
 

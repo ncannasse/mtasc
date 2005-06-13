@@ -7,7 +7,7 @@ dynamic intrinsic class NetConnection
 	function call( remoteMethod : String, resultObject : Object) : Void;
 	function onStatus(infoObject : Object) : Void;
 	function onResult(infoObject : Object) : Void;
-	function addHeader();
+	function addHeader():Void;
 	function close() : Void;
 }
 
