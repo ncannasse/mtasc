@@ -1,8 +1,15 @@
-
+﻿
 intrinsic class TopLevel {
+
+	static var _quality:String; 
+	static var _focusrect:Boolean; 
+	static var _soundbuftime:Number;  
+	static var newline:String; 
 
 	static var Infinity:Number;
 	static var NaN:Number;
+
+	static function getVersion():String; 
 
 	static function escape(value:String):String;
 	static function unescape(value:String):String;

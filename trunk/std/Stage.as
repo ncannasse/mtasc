@@ -1,4 +1,4 @@
-intrinsic class Stage
+﻿intrinsic class Stage
 {
 	static var width:Number;
 	static var height:Number;
@@ -7,8 +7,6 @@ intrinsic class Stage
 	static var showMenu:Boolean;
 	static function addListener(listener:Object):Void;
 	static function removeListener(listener:Object):Void;
-
-	function onResize():Void;
 }
 
 

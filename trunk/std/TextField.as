@@ -1,4 +1,4 @@
-dynamic intrinsic class TextField
+﻿dynamic intrinsic class TextField
 {
 	var _x:Number;
 	var _y:Number;
@@ -52,7 +52,8 @@ dynamic intrinsic class TextField
 	var type:String;
 	var variable:String;
 	var wordWrap:Boolean;
-
+	var mouseWheelEnabled:Boolean;
+	
 	var styleSheet:TextField.StyleSheet;
 
 	function replaceText(beginIndex:Number,endIndex:Number,newText:String):Void;

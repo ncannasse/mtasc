@@ -1,9 +1,11 @@
-intrinsic class Sound
+﻿intrinsic class Sound
 {
 	var duration:Number;
 	var id3:Object;
 	var ID3:Object;
 	var position:Number;
+	
+	function Sound(target:Object);
 	
 	function onLoad(success:Boolean):Void;
 	function onSoundComplete():Void;
