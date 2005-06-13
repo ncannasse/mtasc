@@ -1209,7 +1209,7 @@ let new_context ctx =
 		opt_push = false;
 	}
 
-let generate file ~compress exprs =
+let generate file out ~compress exprs =
 	let file , linkage =
 		(try
 			let f,l = String.split file "@" in
@@ -1238,8 +1238,6 @@ let generate file ~compress exprs =
 		curmethod = "";
 	} in
 	DynArray.add ctx.ops (AStringPool []);
-	push ctx [VStr "Compiled with MTASC : http://tech.motion-twin.com"];
-	write ctx ATrace;
 	let tags = ref [] in
 	let hpackages = Hashtbl.create 0 in
 	Class.generate (fun clctx ->
@@ -1387,7 +1385,7 @@ let generate file ~compress exprs =
 		| x :: l ->
 			x :: loop acc l
 	in
-	let ch = IO.output_channel (open_out_bin file) in
+	let ch = IO.output_channel (open_out_bin out) in
 	Swf.write ch (header,loop [] data);
 	IO.close_out ch
 
@@ -1433,8 +1431,10 @@ generate_function_ref := generate_function;
 SwfParser.init SwfZip.inflate SwfZip.deflate;
 Swf.warnings := false;
 let swf = ref None in
+let out = ref None in
 Plugin.add [
 	("-swf",Arg.String (fun f -> swf := Some f),"<file> : swf file to update");
+	("-out",Arg.String (fun f -> out := Some f),"<file> : swf output file");
 	("-keep",Arg.Unit (fun () -> keep := true),": does not remove AS2 classes from input SWF");
 	("-frame",Arg.Int (fun i -> if i <= 0 then raise (Arg.Bad "Invalid frame"); frame := i),"<frame> : export into target frame (must exist in the swf)");
 	("-main",Arg.Unit (fun () -> enable_main := true),": enable main entry point");
@@ -1447,5 +1447,5 @@ Plugin.add [
 (fun t ->
 	match !swf with 
 	| None -> () 
-	| Some f -> generate f ~compress:true (Typer.exprs t)
+	| Some f -> generate f (match !out with None -> f | Some f -> f) ~compress:true (Typer.exprs t)
 );

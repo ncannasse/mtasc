@@ -3,6 +3,8 @@
 	renamed and hide variable defined by main.
 	fixed x instanceof y ? a : b parsing
 	fixed try with no catch clauses
+	removed mtasc trace message
+	added -out
 
 2005-05-28 : 1.07
 	fixed -keep + -main
