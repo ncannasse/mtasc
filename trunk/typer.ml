@@ -983,7 +983,7 @@ let load_class ctx path p =
 			with
 				File_not_found _ -> error (Class_not_found path) p
 
-let check_interfaces ctx () =
+let check_interfaces ctx =
 	Hashtbl.iter (fun _ clctx ->
 		let cli = Class clctx in
 		let rec loop_interf = function
@@ -1019,7 +1019,6 @@ let create cpath =
 		locals = Hashtbl.create 0;
 		frame = 0;
 	} in
-	add_finalizer ctx (check_interfaces ctx);
 	ignore(load_class ctx ([],"StdPresent") null_pos);
 	ctx.inumber <- Class (load_class ctx ([],"Number") null_pos);
 	ctx.ibool <- Class (load_class ctx ([],"Boolean") null_pos);
@@ -1030,7 +1029,8 @@ let rec finalize ctx =
 	let fl = List.rev !(ctx.finalizers) in
 	ctx.finalizers := [];
 	match fl with
-	| [] -> ()
+	| [] -> 
+		check_interfaces ctx
 	| _ ->
 		List.iter (fun f -> f()) fl;
 		finalize ctx
