@@ -6,6 +6,7 @@
 	removed mtasc trace message
 	added -out
 	a lot of small fixes in "std" header
+	fixed bug in check for implemented interfaces
 
 2005-05-28 : 1.07
 	fixed -keep + -main
