@@ -439,13 +439,24 @@ let generate_ident ctx s p =
 			VarStr
 
 let unescape_chars s = 
-	let s = String.concat "\n" (String.nsplit s "\\n") in
-	let s = String.concat "\r" (String.nsplit s "\\r") in
-	let s = String.concat "\t" (String.nsplit s "\\t") in
-	let s = String.concat "\"" (String.nsplit s "\\\"") in
-	let s = String.concat "'" (String.nsplit s "\\'") in
-	let s = String.concat "\\" (String.nsplit s "\\\\") in
-	s
+	let b = Buffer.create 0 in
+	let rec loop esc i =
+		if i = String.length s then
+			()
+		else
+			let c = s.[i] in
+			match c with
+			| '\\' when not esc -> loop true (i + 1)
+			| 'n' when esc -> Buffer.add_char b '\n'; loop false (i + 1)
+			| 'r' when esc -> Buffer.add_char b '\r'; loop false (i + 1)
+			| 't' when esc -> Buffer.add_char b '\t'; loop false (i + 1)
+			| '"' | '\'' when esc -> Buffer.add_char b '"'; loop false (i + 1)
+			| c ->
+				Buffer.add_char b c;
+				loop false (i + 1)
+	in
+	loop false 0;
+	Buffer.contents b
 
 let rec generate_constant ctx p = function
 	| Int str -> (try push ctx [VInt32 (Int32.of_string str)] with _ -> generate_constant ctx p (Float str))
