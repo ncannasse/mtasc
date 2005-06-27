@@ -1,5 +1,6 @@
 2005-??-?? : 1.09
 	fixed problems in escape sequences such as \\t
+	fixed problem with "delete"
 
 2005-06-20 : 1.08
 	fixed getUrl2 stack.
