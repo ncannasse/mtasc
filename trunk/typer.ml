@@ -986,6 +986,14 @@ let load_class ctx path p =
 let check_interfaces ctx =
 	Hashtbl.iter (fun _ clctx ->
 		let cli = Class clctx in
+		let rec loopeq t1 t2 =
+			match t1, t2 with
+			| Void , Void -> true
+			| Dyn , Dyn -> true
+			| Class cl1 , Class cl2 -> cl1.path = cl2.path
+			| Function (a1,r1) , Function (a2,r2) when List.length a1 = List.length a2 -> List.for_all2 loopeq a1 a2 && loopeq r1 r2
+			| _ , _ -> false
+		in
 		let rec loop_interf = function
 			| i :: l -> loop_fields i; loop_interf l
 			| [] -> ()
@@ -995,7 +1003,9 @@ let check_interfaces ctx =
 				if f.f_static = IsMember then
 					match resolve cli f.f_name with
 					| None -> error (Custom ("Missing field " ^ f.f_name ^ " required by " ^ s_type_path i.path)) { pfile = clctx.file; pmin = 0; pmax = 0 }
-					| Some f2 -> unify f2.f_type f.f_type f2.f_pos
+					| Some f2 -> 
+						unify f2.f_type f.f_type f2.f_pos;
+						if not (loopeq f.f_type f2.f_type) then error (Custom ("Field " ^ f.f_name ^ " type is different from the one defined in " ^ s_type_path i.path)) f2.f_pos
 			) i.fields
 		in
 		loop_interf clctx.implements;

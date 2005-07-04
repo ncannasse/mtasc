@@ -1,7 +1,8 @@
 2005-??-?? : 1.09
 	fixed problems in escape sequences such as \\t
 	fixed problem with "delete"
-
+	more strict checks of interface fields : same type and structure and not only unifiable.
+	
 2005-06-20 : 1.08
 	fixed getUrl2 stack.
 	renamed and hide variable defined by main.
