@@ -1271,28 +1271,8 @@ let generate file out ~compress exprs =
 	| Some (p,clname) -> 
 		let ctx = new_context ctx in 
 		DynArray.add ctx.ops (AStringPool []);
-		let sold = "$mtasc_main_save" in
-		(*// var old = this.onEnterFrame *)
-		push ctx [VStr sold;VStr "this"];
-		write ctx AEval;
-		push ctx [VStr "onEnterFrame"];
-		write ctx AObjGet;
-		write ctx ALocalAssign;
-		(*// this.onEnterFrame =  *)
-		push ctx [VStr "this"];
-		write ctx AEval;
-		push ctx [VStr "onEnterFrame"];
-		ctx.reg_count <- 1;
-		(*// function { *)
-		let fdone = func ctx [] false false in
-		(*//    this.onEnterFrame = old; *)
-		push ctx [VThis];
-		write ctx AEval;
-		push ctx [VStr "onEnterFrame"; VStr sold];
-		write ctx AEval;
-		write ctx AObjSet;
 		(*//    (main class).main(this); *)
-		push ctx [VThis];
+		push ctx [VStr "this"];
 		write ctx AEval;
 		push ctx [VInt 1];
 		let k = generate_package ~fast:true ctx p in
@@ -1300,18 +1280,6 @@ let generate file out ~compress exprs =
 		getvar ctx k;
 		push ctx [VStr "main"];
 		call ctx VarObj 1;
-		write ctx APop;
-		(*//    old.apply(this); *)
-		push ctx [VThis; VInt 1; VStr sold];
-		write ctx AEval;
-		push ctx [VStr "apply"];
-		call ctx VarObj 1;
-		write ctx APop;
-		fdone (ctx.reg_count + 1);
-		(*// } *)
-		write ctx AObjSet;
-		push ctx [VInt 1; VStr sold; VThis; VInt 3; VStr "ASSetPropFlags"];
-		call ctx VarStr 3;
 		write ctx APop;
 		tags := ("__Packages.MTASC.main",ctx.idents,ctx.ops) :: !tags;
 	);
@@ -1340,43 +1308,50 @@ let generate file out ~compress exprs =
 	let header = (if !flash6 then { header with h_version = 6 } else header) in
 	let found = ref false in
 	let curf = ref !frame in
-	let insert loop acc l =
+	let insert loop showf acc l =
 		if !found || !curf > 1 then begin
 			curf := !curf - 1;
-			List.rev acc @ loop [] l
+			loop (showf :: acc) l
 		end else begin
 			found := true;
 			let rec loop_tag cid = function
-				| [] -> List.rev acc @ loop [] l
+				| [] -> []
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
 					tag ~ext:true (TDoInitAction { dia_id = cid; dia_actions = ops }) ::
 					loop_tag (cid + 1) l
 			in
-			loop_tag 0x5000 !tags
+			let t = List.rev (loop_tag 0x5000 !tags) in
+			loop (showf :: t @ acc) l
 		end
 	in
-	let replace_package p = 
-		p = "__Packages.MTASC" || p = "__Packages.MTASC.main" || List.exists (fun (n,_,_) -> p = n) !tags
+	let replace_package p cid x y z = 
+		if p = "__Packages.MTASC" || p = "__Packages.MTASC.main" then
+			[]
+		else try 
+			let t = List.find (fun (n,_,_) -> p = n) !tags in
+			tags := List.filter ((!=) t) !tags;
+			[x;y;tag ~ext:true (TDoInitAction { dia_id = cid; dia_actions = (match t with (_,_,o) -> o) })]
+		with Not_found ->
+			if !use_components && String.length p > 14 && String.sub p 0 14 = "__Packages.mx." then
+				[x;y;z]
+			else if !keep then
+				[x;y;z]
+			else
+				[]
 	in
 	let rec loop acc = function
 		| [] ->
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
 			List.rev acc
 		| ({ tdata = TDoAction _ } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
-			insert loop (x2 :: x1 :: acc) l
+			insert loop x2 (x1 :: acc) l
 		| ({ tdata = TShowFrame } as x) :: l ->
-			insert loop (x :: acc) l
-		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l when
-			(not !keep || replace_package e) &&
-			String.length e > 11 &&
-			String.sub e 0 11 = "__Packages."
-			->
-				if !use_components && String.length e > 14 && String.sub e 0 14 = "__Packages.mx." then
-					x :: y :: z :: loop acc l
-				else
-					loop acc l
+			insert loop x acc l
+		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e; exp_id = cid }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l ->
+			let l2 = replace_package e cid x y z in
+			loop ((List.rev l2) @ acc) l
 		| { tdata = TDoInitAction { dia_actions = d } } as x :: l ->
 			(match DynArray.to_list d with
 			[
@@ -1393,12 +1368,13 @@ let generate file out ~compress exprs =
 					ignore(Class.getclass ctx.current cpath)
 				with
 				_ -> 
-					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then prerr_endline ("Warning : Missing class " ^ clname ^ " required by MovieClip " ^ mcname ^ " with registerClass"));
+					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then
+						prerr_endline ("Warning : The MovieClip " ^ mcname ^ " needs class " ^ clname ^ " which was not compiled : please force compilation of this class by adding it to the commandline."));
 				loop (x :: acc) l
 			| _ ->
-				x :: loop acc l);
+				loop (x :: acc) l);
 		| x :: l ->
-			x :: loop acc l
+			loop (x :: acc) l
 	in
 	let ch = IO.output_channel (open_out_bin out) in
 	Swf.write ch (header,loop [] data);
