@@ -1340,14 +1340,14 @@ let generate file out ~compress exprs =
 	let header = (if !flash6 then { header with h_version = 6 } else header) in
 	let found = ref false in
 	let curf = ref !frame in
-	let insert loop acc x l =
+	let insert loop acc l =
 		if !found || !curf > 1 then begin
 			curf := !curf - 1;
-			List.rev (x @ acc) @ loop [] l
+			List.rev acc @ loop [] l
 		end else begin
 			found := true;
 			let rec loop_tag cid = function
-				| [] -> List.rev (x @ acc) @ loop [] l
+				| [] -> List.rev acc @ loop [] l
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
@@ -1357,16 +1357,19 @@ let generate file out ~compress exprs =
 			loop_tag 0x5000 !tags
 		end
 	in
+	let replace_package p = 
+		p = "__Packages.MTASC" || p = "__Packages.MTASC.main" || List.exists (fun (n,_,_) -> p = n) !tags
+	in
 	let rec loop acc = function
 		| [] ->
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
 			List.rev acc
 		| ({ tdata = TDoAction _ } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
-			insert loop acc [x2;x1] l
+			insert loop (x2 :: x1 :: acc) l
 		| ({ tdata = TShowFrame } as x) :: l ->
-			insert loop acc [x] l
+			insert loop (x :: acc) l
 		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l when
-			(not !keep || e = "__Packages.MTASC" || e = "__Packages.MTASC.main") &&
+			(not !keep || replace_package e) &&
 			String.length e > 11 &&
 			String.sub e 0 11 = "__Packages."
 			->
