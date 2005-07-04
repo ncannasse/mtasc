@@ -916,8 +916,14 @@ let type_file ctx req_path file el pos =
 	let clerror t p =
 		if pos = argv_pos then
 			()
-		else
-			error (Class_name_mistake req_path) p
+		else begin
+			let a = Array.to_list (Sys.readdir (Filename.dirname file)) in
+			let f = Filename.basename file in
+			if List.exists ((=) f) a then
+				error (Class_name_mistake req_path) p
+			else
+				error (Class_name_mistake t) pos
+		end
 	in
 	List.iter (fun ((s,p) as sign) ->
 		match s with
@@ -964,7 +970,7 @@ let load_file ctx file =
 	List.iter check_sign expr;
 	Hashtbl.add ctx.files file expr;
 	verbose_msg ("Parsed " ^ file);
-	expr
+	file , expr
 
 let load_class ctx path p =
 	try
@@ -977,7 +983,8 @@ let load_class ctx path p =
 				 | _ -> String.concat "/" (fst path) ^ "/" ^ snd path ^ ".as")
 			in
 			try
-				match type_file ctx path file_name (load_file ctx file_name) p with
+				let f , e = load_file ctx file_name in
+				match type_file ctx path f e p with
 				| None -> error (Custom "Missing class definition") { pfile = file_name; pmin = 0; pmax = 0 }
 				| Some c -> c
 			with
