@@ -635,6 +635,7 @@ and generate_call ?(newcall=false) ctx v vl =
 		let v = (match v with EParenthesis v , _ -> v | _ -> v) in
 		(match generate_access ctx v with
 		| VarObj -> write ctx ADeleteObj
+		| VarReg n when n <> -1 -> ()
 		| _ -> write ctx ADelete)
 	| EConst (Ident "throw") , [v] ->
 		generate_val ctx v;
