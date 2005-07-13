@@ -1309,10 +1309,11 @@ let generate file out ~compress exprs =
 	let header = (if !flash6 then { header with h_version = 6 } else header) in
 	let found = ref false in
 	let curf = ref !frame in
+	let regs = ref [] in
 	let insert loop showf acc l =
 		if !found || !curf > 1 then begin
 			curf := !curf - 1;
-			loop (showf :: acc) l
+			loop (showf @ acc) l
 		end else begin
 			found := true;
 			let rec loop_tag cid = function
@@ -1324,7 +1325,7 @@ let generate file out ~compress exprs =
 					loop_tag (cid + 1) l
 			in
 			let t = List.rev (loop_tag 0x5000 !tags) in
-			loop (showf :: t @ acc) l
+			loop (showf @ !regs @ t @ acc) l
 		end
 	in
 	let replace_package p cid x y z = 
@@ -1347,15 +1348,30 @@ let generate file out ~compress exprs =
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
 			List.rev acc
 		| ({ tdata = TDoAction _ } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
-			insert loop x2 (x1 :: acc) l
+			insert loop [x2;x1] acc l
 		| ({ tdata = TShowFrame } as x) :: l ->
-			insert loop x acc l
+			insert loop [x] acc l
 		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e; exp_id = cid }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l ->
 			let l2 = replace_package e cid x y z in
 			loop ((List.rev l2) @ acc) l
 		| { tdata = TDoInitAction { dia_actions = d } } as x :: l ->
+			let process mcname clname =
+				let cpath = (match List.rev (String.nsplit clname ".") with [] -> assert false | x :: l -> List.rev l , x) in
+				(try
+					ignore(Class.getclass ctx.current cpath)
+				with
+				_ -> 
+					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then
+						prerr_endline ("Warning : The MovieClip " ^ mcname ^ " needs the class " ^ clname ^ " which was not compiled :\nPlease force compilation of this class by adding it to the commandline."));				
+				if !found then
+					loop (x :: acc) l
+				else begin
+					regs := x :: !regs;
+					loop acc l
+				end
+			in
 			(match DynArray.to_list d with
-			[
+			| [
 				APush [PString clname];
 				AEval;
 				APush [PString mcname;PInt _;PString "Object"];
@@ -1363,15 +1379,19 @@ let generate file out ~compress exprs =
 				APush [PString "registerClass"];
 				AObjCall;
 				APop
-			] -> 
-				let cpath = (match List.rev (String.nsplit clname ".") with [] -> assert false | x :: l -> List.rev l , x) in
-				(try
-					ignore(Class.getclass ctx.current cpath)
-				with
-				_ -> 
-					if not !use_components || (match cpath with ("mx" :: _, _) -> false | _ -> true) then
-						prerr_endline ("Warning : The MovieClip " ^ mcname ^ " needs class " ^ clname ^ " which was not compiled : please force compilation of this class by adding it to the commandline."));
-				loop (x :: acc) l
+			] ->
+				process mcname clname
+			| [
+				AStringPool [clname;"Object";"registerClass"];
+				APush [PStack 0];
+				AEval;
+				APush [PStack 0;PInt _;PStack 1];
+				AEval;
+				APush [PStack 2];
+				AObjCall;
+				APop;
+			] -> 				
+				process clname clname
 			| _ ->
 				loop (x :: acc) l);
 		| x :: l ->
