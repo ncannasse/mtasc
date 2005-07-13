@@ -5,6 +5,7 @@
 	-keep with -separate replace compiled packages.
 	added check for file name case on Win32
 	changed -main and algorithm for updating SWF
+	fixed problem when autoregisterclass with classname = linkagename
 	
 2005-06-20 : 1.08
 	fixed getUrl2 stack.
