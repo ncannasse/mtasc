@@ -1,4 +1,4 @@
-﻿dynamic intrinsic class TextField
+dynamic intrinsic class TextField
 {
 	var _x:Number;
 	var _y:Number;
@@ -53,7 +53,7 @@
 	var variable:String;
 	var wordWrap:Boolean;
 	var mouseWheelEnabled:Boolean;
-	
+
 	var styleSheet:TextField.StyleSheet;
 
 	function replaceText(beginIndex:Number,endIndex:Number,newText:String):Void;
@@ -72,4 +72,13 @@
 	function onKillFocus(newFocus:Object):Void;
 	function onScroller(scrolledField:TextField):Void;
 	function onSetFocus(oldFocus:Object):Void;
+
+	// Flash 8
+
+	var antiAliasType : String;
+	var filters : Array;
+	var gridFitType : String;
+	var sharpness : Number;
+	var thickness : Number;
+
 }
