@@ -1,0 +1,8 @@
+MTASC : Motion-Twin ActionScript 2 OpenSource Compiler.
+http://team.motion-twin.com/ncannasse/mtasc.html
+
+You can put the "std" directory as a subdirectory of the
+dir you installed the mtasc binary, or you can specify each
+time you want to compile the classpath to flash class headers
+stored into the "std" directory using the -cp commandline
+parameter.
