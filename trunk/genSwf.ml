@@ -1202,7 +1202,7 @@ let to_utf8 str =
 			UTF8.Buf.contents b
 
 let use_components = ref false
-let separate = ref false
+let separate = ref true
 let keep = ref false
 let bgcolor = ref 0xFFFFFF
 let frame = ref 1
@@ -1451,7 +1451,7 @@ Plugin.add [
 	("-frame",Arg.Int (fun i -> if i <= 0 then raise (Arg.Bad "Invalid frame"); frame := i),"<frame> : export into target frame (must exist in the swf)");
 	("-main",Arg.Unit (fun () -> enable_main := true),": enable main entry point");
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
-	("-separate",Arg.Unit (fun () -> separate := true),": separate classes into different clips");
+	("-group",Arg.Unit (fun () -> separate := false),": group classes into a single clip");
 	("-exclude",Arg.String (fun f -> exclude_file f),"<file> : exclude classes listed in file");
 	("-version",Arg.Int (fun n -> version := Some n),": change SWF version (6,7,8,...)");	
 	("-trace",Arg.String (fun t -> ftrace := Some t),"<function> : specify a TRACE function");
