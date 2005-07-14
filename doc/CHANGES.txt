@@ -9,6 +9,7 @@
 	fixed problem when autoregisterclass with classname = linkagename
 	added -version X (removed -flash6)
 	added Flash8 headers
+	removed -separate (now on by default), added -group (turn off separate)
 	
 2005-06-20 : 1.08
 	fixed getUrl2 stack.
