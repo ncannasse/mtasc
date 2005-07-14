@@ -1,7 +1,5 @@
 intrinsic class flash.filters.DisplacementMapFilter {
 
-	static var Mode : flash.filters.__Mode;
-
 	var alpha : Number;
 	var color : Number;
 	var mode : String;
