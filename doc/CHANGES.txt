@@ -9,7 +9,9 @@
 	fixed problem when autoregisterclass with classname = linkagename
 	added -version X (removed -flash6)
 	added Flash8 headers
-	removed -separate (now on by default), added -group (turn off separate)
+	(hotfixes)
+	removed -separate (now on by default), added -group (turn off separate)	
+	fixed clips id generation (bug when compiling several times).
 	
 2005-06-20 : 1.08
 	fixed getUrl2 stack.
