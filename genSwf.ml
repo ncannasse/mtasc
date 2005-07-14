@@ -93,7 +93,7 @@ let stack_delta = function
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
 
 let enable_main = ref false
-let flash6 = ref false
+let version = ref None
 let ftrace = ref None
 
 let write ctx op =
@@ -1096,7 +1096,7 @@ let generate_class_code ctx clctx h =
 	setvar ctx k;
 	(match Class.superclass clctx with
 	| None -> ()
-	| Some csuper when !flash6 ->	
+	| Some csuper when !version = Some 6 ->	
 		(* myclass.prototype.__proto__ = superclass.prototype *)
 		push ctx [VReg 0; VStr "prototype"];
 		getvar ctx VarObj;
@@ -1306,7 +1306,7 @@ let generate file out ~compress exprs =
 			let data = data @ (Array.to_list (Array.init !frame (fun _ -> tag TShowFrame))) in
 			h , data)
 	in
-	let header = (if !flash6 then { header with h_version = 6 } else header) in
+	let header = (match !version with None -> header | Some v -> { header with h_version = v }) in
 	let found = ref false in
 	let curf = ref !frame in
 	let regs = ref [] in
@@ -1453,7 +1453,7 @@ Plugin.add [
 	("-header",Arg.String (fun s -> header := Some (make_header s)),"<header> : specify header format 'width:height:fps'");
 	("-separate",Arg.Unit (fun () -> separate := true),": separate classes into different clips");
 	("-exclude",Arg.String (fun f -> exclude_file f),"<file> : exclude classes listed in file");
-	("-flash6",Arg.Unit (fun () -> flash6 := true),": generate Flash6 bytecode");
+	("-version",Arg.Int (fun n -> version := Some n),": change SWF version (6,7,8,...)");	
 	("-trace",Arg.String (fun t -> ftrace := Some t),"<function> : specify a TRACE function");
 ]
 (fun t ->
