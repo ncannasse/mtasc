@@ -1,4 +1,4 @@
-﻿dynamic intrinsic class MovieClip
+dynamic intrinsic class MovieClip
 {
 	var useHandCursor:Boolean;
 	var enabled:Boolean;
@@ -33,7 +33,7 @@
 	var _url:String;
 	var _parent:MovieClip;
 	var menu:ContextMenu;
-	
+
 	function getURL(url:String,window:String,method:String):Void;
 	function unloadMovie():Void;
 	function loadVariables(url:String,method:String):Void;
@@ -92,6 +92,12 @@
 	function onRollOver():Void;
 	function onSetFocus(oldFocus:Object):Void;
 	function onUnload():Void;
+
+	// FLASH 8
+
+	var filters : Array;
+	var blendMode : String;
+
 }
 
 
