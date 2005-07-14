@@ -1310,13 +1310,19 @@ let generate file out ~compress exprs =
 	let found = ref false in
 	let curf = ref !frame in
 	let regs = ref [] in
+	let found_ids = ref [] in
 	let insert loop showf acc l =
 		if !found || !curf > 1 then begin
 			curf := !curf - 1;
 			loop (showf @ acc) l
 		end else begin
 			found := true;
-			let rec loop_tag cid = function
+			let rec loop_tag cid l = 
+				if List.exists ((=) cid) !found_ids then
+					loop_tag (cid + 1) l
+				else
+					loop_tag_rec cid l
+			and loop_tag_rec cid = function				
 				| [] -> []
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
@@ -1327,7 +1333,7 @@ let generate file out ~compress exprs =
 			let t = List.rev (loop_tag 0x5000 !tags) in
 			loop (showf @ !regs @ t @ acc) l
 		end
-	in
+	in	
 	let replace_package p cid x y z = 
 		if p = "__Packages.MTASC" || p = "__Packages.MTASC.main" then
 			[]
@@ -1353,6 +1359,7 @@ let generate file out ~compress exprs =
 			insert loop [x] acc l
 		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e; exp_id = cid }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l ->
 			let l2 = replace_package e cid x y z in
+			if l2 <> [] then found_ids := cid :: !found_ids;
 			loop ((List.rev l2) @ acc) l
 		| { tdata = TDoInitAction { dia_actions = d } } as x :: l ->
 			let process mcname clname =
