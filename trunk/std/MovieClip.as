@@ -97,6 +97,7 @@ dynamic intrinsic class MovieClip
 
 	var filters : Array;
 	var blendMode : String;
+	var cacheAsBitmap : Boolean;
 
 }
 
