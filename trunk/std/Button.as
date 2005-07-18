@@ -30,6 +30,11 @@ intrinsic class Button
 	var trackAsMenu:Boolean;
 	var menu:ContextMenu;
 
+	var scale9Grid;
+	var filters : Array;
+	var cacheAsBitmap : Boolean;
+	var blendMode : String;
+
 	function getDepth():Number;
 
 	function onDragOut():Void;

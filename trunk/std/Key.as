@@ -29,4 +29,6 @@ intrinsic class Key
 	static function addListener(listener:Object):Void;
 	static function removeListener(listener:Object):Boolean;
 
+	static function isAccessible(code:Number) : Boolean;
+
 }

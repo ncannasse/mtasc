@@ -98,6 +98,13 @@ dynamic intrinsic class MovieClip
 	var filters : Array;
 	var blendMode : String;
 	var cacheAsBitmap : Boolean;
+	function attachBitmap( bmp : flash.display.BitmapData, depth : Number, aa : String, unk : Boolean ) : Void;
+
+	var opaqueBackground;
+	var scrollRect;
+	var transform;
+	var scale9Grid;
+	var getRect;
 
 }
 
