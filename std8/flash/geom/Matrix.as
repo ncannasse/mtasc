@@ -10,10 +10,10 @@ intrinsic class flash.geom.Matrix {
 	var tx : Number;
 	var ty : Number;
 
-	function Matrix();
+	function Matrix(a : Number, b : Number, c : Number, d : Number, tx : Number, ty : Number);
 
 	function transformPoint( p : Point ) : Point;
-	function deltaTransformPoint( p : Point ) : Void;
+	function deltaTransformPoint( p : Point ) : Void; // does not apply translation
 	function toString() : String;
 	function scale( sx : Number, sy : Number ) : Void;
 	function translate( tx : Number, ty : Number ) : Void;
@@ -23,8 +23,8 @@ intrinsic class flash.geom.Matrix {
 	function concat( m : Matrix ) : Void;
 	function clone() : Matrix;
 
-	function createGradientBox();
-	function createBox();
+	function createGradientBox( width : Number, height : Number, rot : Number, x : Number, y : Number );
+	function createBox( scalex : Number, scaley : Number, rot : Number, x : Number, y : Number );
 
 
 }
