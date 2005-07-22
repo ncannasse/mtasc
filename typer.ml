@@ -916,7 +916,10 @@ let type_file ctx req_path file el pos =
 	let clerror t p =
 		if pos = argv_pos then
 			()
-		else begin
+		else if String.lowercase (s_type_path req_path) = String.lowercase (s_type_path t) then begin
+			Hashtbl.remove ctx.files file;
+			error (Class_not_found req_path) pos
+		end else begin
 			let a = Array.to_list (Sys.readdir (Filename.dirname file)) in
 			let f = Filename.basename file in
 			if List.exists ((=) f) a then
