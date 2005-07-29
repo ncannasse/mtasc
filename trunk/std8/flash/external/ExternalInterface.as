@@ -14,16 +14,16 @@ intrinsic class flash.external.ExternalInterface {
 	static function addCallback( funname, inst, method );
 	static function call( funname );
 	static function _callIn( inst, method, request );
-	
+
 	static function _arrayToXML( a : Array ) : String;
 	static function _argumentsToXML( a : Array ) : String;
 	static function _objectToXML( o : Object ) : String;
 	static function _toXML( v ) : String;
 
-	static function _objectToAS( obj : XmlNode );
-	static function _arrayToAS( obj : XmlNode ) : Array;
-	static function _argumentsToAS( obj : XmlNode ) : Array;
-	static function _toAS( obj : XmlNode );
+	static function _objectToAS( obj : XMLNode );
+	static function _arrayToAS( obj : XMLNode ) : Array;
+	static function _argumentsToAS( obj : XMLNode ) : Array;
+	static function _toAS( obj : XMLNode );
 
 	static function _arrayToJS( a : Array ) : String;
 	static function _objectToJS( o : Object ) : String;
