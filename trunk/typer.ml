@@ -102,6 +102,7 @@ exception File_not_found of string
 let verbose = ref false
 let strict_mode = ref false
 let use_components = ref false
+let local_inference = ref false
 
 let argv_pos = { pfile = "<argv>"; pmin = -1; pmax = -1 }
 
@@ -554,44 +555,46 @@ let rec type_binop ctx op v1 v2 p =
 	let t2 = type_val ctx v2 in
 	no_void t1 (pos v1);
 	no_void t2 (pos v2);
-	match op with
-	| OpAdd ->
-		if t1 == Dyn || t2 == Dyn then
-			Dyn
-		else if is_number ctx t1 && is_number ctx t2 then
+	let rec loop = function
+		| OpAdd ->
+			if t1 == Dyn || t2 == Dyn then
+				Dyn
+			else if is_number ctx t1 && is_number ctx t2 then
+				ctx.inumber
+			else
+				ctx.istring
+		| OpAnd
+		| OpOr
+		| OpXor
+		| OpShl
+		| OpShr
+		| OpUShr
+		| OpMod
+		| OpMult | OpDiv | OpSub ->
+			unify t1 ctx.inumber p;
+			unify t2 ctx.inumber p;
 			ctx.inumber
-		else
-			ctx.istring
-	| OpAnd
-	| OpOr
-	| OpXor
-	| OpShl
-	| OpShr
-	| OpUShr
-	| OpMod
-	| OpMult | OpDiv | OpSub ->
-		unify t1 ctx.inumber p;
-		unify t2 ctx.inumber p;
-		ctx.inumber
-	| OpAssign ->
-		unify t2 t1 p;
-		t1
-	| OpEq
-	| OpPhysEq
-	| OpPhysNotEq
-	| OpNotEq
-	| OpGt
-	| OpGte
-	| OpLt
-	| OpLte ->
-		ctx.ibool
-	| OpBoolAnd
-	| OpBoolOr ->
-		tcommon ctx t1 t2 p
-	| OpAssignOp op ->
-		let t = type_binop ctx op v1 v2 p in
-		unify t t1 p;
-		t1
+		| OpAssign ->
+			unify t2 t1 p;
+			t1
+		| OpEq
+		| OpPhysEq
+		| OpPhysNotEq
+		| OpNotEq
+		| OpGt
+		| OpGte
+		| OpLt
+		| OpLte ->
+			ctx.ibool
+		| OpBoolAnd
+		| OpBoolOr ->
+			tcommon ctx t1 t2 p
+		| OpAssignOp op ->
+			let t = loop op in
+			unify t t1 p;
+			t1
+	in
+	loop op
 
 and type_val ?(in_field=false) ctx ((v,p) as e) =
 	match v with
@@ -711,9 +714,15 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 let rec type_expr ctx (e,p) =
 	match e with
 	| EVars (_,_,vl) ->
-		let vt = List.map (fun (name,t,v) -> 
-			let t = t_opt ctx p t in
-			(match v with None -> () | Some v -> unify (type_val ctx v) t (pos v));
+		let vt = List.map (fun (name,tt,v) -> 
+			let t = t_opt ctx p tt in
+			let t = (match v with
+				| None -> t 
+				| Some v -> 
+					let tv = type_val ctx v in
+					unify tv t (pos v);
+					if !local_inference && tt = None then tv else t
+			) in
 			name , t
 		) vl in
 		List.iter (fun (name,t) -> define_local ctx name t p) vt
