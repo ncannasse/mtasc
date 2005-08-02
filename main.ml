@@ -122,6 +122,7 @@ try
 		("-cp",Arg.String (fun path -> Plugin.class_path := parse_class_path base_path path @ !Plugin.class_path),"<paths> : add classpath");
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
 		("-strict",Arg.Unit (fun () -> Typer.strict_mode := true),": turn on strict mode");
+		("-infer",Arg.Unit (fun () -> Typer.local_inference := true),": turn on local variables inference");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 		("-mx",Arg.Unit (fun () ->
 			Typer.use_components := true;
