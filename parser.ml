@@ -36,8 +36,9 @@ let error_msg = function
 let error m p = raise (Error (m,p))
 
 let priority = function
-	| OpAssign | OpAssignOp _ -> -3
-	| OpBoolAnd | OpBoolOr -> -2
+	| OpAssign | OpAssignOp _ -> -4
+	| OpBoolOr -> -3
+	| OpBoolAnd -> -2
 	| OpEq | OpNotEq | OpGt | OpLt | OpGte | OpLte | OpPhysEq | OpPhysNotEq -> -1
 	| OpOr | OpAnd | OpXor -> 0
 	| OpShl | OpShr | OpUShr -> 1
