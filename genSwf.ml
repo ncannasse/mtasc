@@ -21,6 +21,7 @@ open Expr
 open Swf
 open ExtHashtbl
 open ExtString
+open ExtList
 
 type kind = 
 	| VarReg of int
@@ -1222,6 +1223,17 @@ let new_context ctx =
 		opt_push = false;
 	}
 
+let is_excluded (path,name) =
+	if Hashtbl.mem excludes (s_type_path (path,name)) then
+		true
+	else
+		let rec loop = function
+			| [] -> false
+			| p :: l ->
+				Hashtbl.mem excludes (String.concat "." (List.rev ("*" :: p :: l))) || loop l
+		in
+		loop (List.rev path)
+
 let generate file out ~compress exprs =
 	let file , linkage =
 		(try
@@ -1256,7 +1268,7 @@ let generate file out ~compress exprs =
 	Class.generate (fun clctx ->
 		ctx.current <- clctx;
 		let ctx = (if !separate then new_context ctx else ctx) in
-		if not (Class.intrinsic clctx) && not (Hashtbl.mem excludes (s_type_path (Class.path clctx))) then begin
+		if not (Class.intrinsic clctx) && not (is_excluded (Class.path clctx)) then begin
 			if !separate then DynArray.add ctx.ops (AStringPool []);
 			let ssize = ActionScript.actions_length ctx.ops in
 			generate_class_code ctx clctx (if !separate then Hashtbl.create 0 else hpackages);
@@ -1287,7 +1299,7 @@ let generate file out ~compress exprs =
 	tags := List.rev !tags;
 	List.iter (fun (n,idents,ops) ->
 		let idents = Hashtbl.fold (fun ident pos acc -> (ident,pos) :: acc) idents [] in
-		let idents = List.sort (fun (_,p1) (_,p2) -> compare p1 p2) idents in
+		let idents = List.sort ~cmp:(fun (_,p1) (_,p2) -> compare p1 p2) idents in
 		DynArray.set ops 0 (AStringPool (List.map (fun (id,_) -> to_utf8 id) idents));
 	) !tags;
 	let tag ?(ext=false) d = {
@@ -1440,10 +1452,17 @@ let make_header s =
 		_ -> raise (Arg.Bad "Invalid header format")
 
 let exclude_file f =
-	let ch = open_in f in
-	let lines = Std.input_list ch in
-	close_in ch;
-	List.iter (fun f -> Hashtbl.add excludes f ()) lines
+	let lines = (try
+		let ch = open_in (Plugin.find_file f) in
+		let lines = Std.input_list ch in
+		close_in ch;
+		lines
+	with Not_found | Sys_error _ ->
+		String.nsplit f ";"
+	) in
+	List.iter (fun f ->
+		if f <> "" then Hashtbl.replace excludes f ()
+	) lines
 
 ;;
 generate_function_ref := generate_function;
@@ -1463,7 +1482,8 @@ Plugin.add [
 	("-version",Arg.Int (fun n -> version := Some n),": change SWF version (6,7,8,...)");	
 	("-trace",Arg.String (fun t -> ftrace := Some t),"<function> : specify a TRACE function");
 ]
-(fun t ->
+(fun t ->	
+	if !Plugin.verbose && Hashtbl.length excludes > 0 then Printf.printf "Excludes : %s\n" (String.concat ";" (List.of_enum (Hashtbl.keys excludes)));
 	match !swf with 
 	| None -> () 
 	| Some f -> generate f (match !out with None -> f | Some f -> f) ~compress:true (Typer.exprs t)
