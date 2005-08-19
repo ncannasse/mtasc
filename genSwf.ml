@@ -585,9 +585,16 @@ and generate_geturl ctx c vars p =
 
 and generate_call ?(newcall=false) ctx v vl =
 	match fst v , vl with
-	| EConst (Ident "TRACE") , args ->
+	| EConst (Ident "trace") , args ->
 		(match !ftrace with
-		| None -> ()
+		| None ->
+			(match args with
+			| [v] ->
+				generate_val ctx v;
+				write ctx ATrace
+			| _ -> error (pos v))
+		| Some "" | Some "no" ->
+			()
 		| Some f ->
 			let rec loop f =
 				try
@@ -607,9 +614,6 @@ and generate_call ?(newcall=false) ctx v vl =
 						(EConst (String pos.pfile)) , pos;
 						(EConst (Int (string_of_int line))) , pos
 					]))
-	| EConst (Ident "trace") , [v] ->
-		generate_val ctx v;
-		write ctx ATrace
 	| EConst (Ident "instanceof") , [v1;v2] ->
 		generate_val ctx v1;
 		generate_val ctx v2;

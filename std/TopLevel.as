@@ -1,15 +1,15 @@
-﻿
+
 intrinsic class TopLevel {
 
-	static var _quality:String; 
-	static var _focusrect:Boolean; 
-	static var _soundbuftime:Number;  
-	static var newline:String; 
+	static var _quality:String;
+	static var _focusrect:Boolean;
+	static var _soundbuftime:Number;
+	static var newline:String;
 
 	static var Infinity:Number;
 	static var NaN:Number;
 
-	static function getVersion():String; 
+	static function getVersion():String;
 
 	static function escape(value:String):String;
 	static function unescape(value:String):String;
@@ -26,7 +26,6 @@ intrinsic class TopLevel {
 
 	// private members are not stored into _global, they need special compilation opcodes
 
-	private static function TRACE(value):Void;
 	private static function trace(value):Void;
 	private static function eval( e : String );
 	private static function getURL(url:String,target:String,vars:String):Void;
