@@ -449,18 +449,38 @@ let unescape_chars s p =
 			if esc then begin
 				let inext = ref (i + 1) in
 				(match c with
+				| 'b' -> Buffer.add_char b '\b'
+				| 'f' -> Buffer.add_char b (char_of_int 12)
 				| 'n' -> Buffer.add_char b '\n'
 				| 'r' -> Buffer.add_char b '\r'
 				| 't' -> Buffer.add_char b '\t'
 				| '"' | '\'' | '\\' -> Buffer.add_char b c
-				| '0'..'9' when i < String.length s - 2 && s.[i+1] >= '0' && s.[i+1] <= '9' && s.[i+2] >= '0' && s.[i+2] <= '9' ->
+				| '0'..'3' ->
 					let c = (try
-						char_of_int (int_of_string (String.sub s i 3))
+						char_of_int (int_of_string ("0o" ^ String.sub s i 3))
 					with _ ->
 						raise (Lexer.Error (Lexer.Invalid_character c,p))
 					) in
 					Buffer.add_char b c;
 					inext := !inext + 2;
+				| 'x' ->
+					let c = (try
+						char_of_int (int_of_string ("0x" ^ String.sub s (i+1) 2))
+					with _ ->
+						raise (Lexer.Error (Lexer.Invalid_character c,p))
+					) in
+					Buffer.add_char b c;
+					inext := !inext + 2;
+				| 'u' ->
+					let i = (try
+						int_of_string ("0x" ^ String.sub s (i+1) 4)
+					with _ ->
+						raise (Lexer.Error (Lexer.Invalid_character c,p))
+					) in
+					let ub = UTF8.Buf.create 0 in
+					UTF8.Buf.add_char ub (UChar.chr i);
+					Buffer.add_string b (UTF8.Buf.contents ub);
+					inext := !inext + 4
 				| _ -> raise (Lexer.Error (Lexer.Invalid_character c,p)));
 				loop false !inext;
 			end else
