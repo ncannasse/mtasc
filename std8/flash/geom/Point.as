@@ -7,7 +7,7 @@ intrinsic class flash.geom.Point {
 	function Point( x : Number, y : Number );
 
 	function normalize() : Void;
-	function add( p : Point ) : Point;
+//	function add( p : Point ) : Point;
 	function subtract( p : Point ) : Point;
 	function equals( p : Point ) : Boolean;
 	function offset( dx : Number, dy : Number ) : Void;
