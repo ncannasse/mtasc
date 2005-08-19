@@ -439,22 +439,36 @@ let generate_ident ctx s p =
 			push ctx [VStr s];
 			VarStr
 
-let unescape_chars s = 
+let unescape_chars s p = 
 	let b = Buffer.create 0 in
 	let rec loop esc i =
 		if i = String.length s then
 			()
 		else
 			let c = s.[i] in
-			match c with
-			| '\\' when not esc -> loop true (i + 1)
-			| 'n' when esc -> Buffer.add_char b '\n'; loop false (i + 1)
-			| 'r' when esc -> Buffer.add_char b '\r'; loop false (i + 1)
-			| 't' when esc -> Buffer.add_char b '\t'; loop false (i + 1)
-			| '"' | '\'' when esc -> Buffer.add_char b '"'; loop false (i + 1)
-			| c ->
-				Buffer.add_char b c;
-				loop false (i + 1)
+			if esc then begin
+				let inext = ref (i + 1) in
+				(match c with
+				| 'n' -> Buffer.add_char b '\n'
+				| 'r' -> Buffer.add_char b '\r'
+				| 't' -> Buffer.add_char b '\t'
+				| '"' | '\'' | '\\' -> Buffer.add_char b c
+				| '0'..'9' when i < String.length s - 2 && s.[i+1] >= '0' && s.[i+1] <= '9' && s.[i+2] >= '0' && s.[i+2] <= '9' ->
+					let c = (try
+						char_of_int (int_of_string (String.sub s i 3))
+					with _ ->
+						raise (Lexer.Error (Lexer.Invalid_character c,p))
+					) in
+					Buffer.add_char b c;
+					inext := !inext + 2;
+				| _ -> raise (Lexer.Error (Lexer.Invalid_character c,p)));
+				loop false !inext;
+			end else
+				match c with
+				| '\\' -> loop true (i + 1)
+				| c ->
+					Buffer.add_char b c;
+					loop false (i + 1)
 	in
 	loop false 0;
 	Buffer.contents b
@@ -462,7 +476,7 @@ let unescape_chars s =
 let rec generate_constant ctx p = function
 	| Int str -> (try push ctx [VInt32 (Int32.of_string str)] with _ -> generate_constant ctx p (Float str))
 	| Float str -> push ctx [VFloat (try float_of_string str with _ -> error p)]
-	| String s -> push ctx [VStr (unescape_chars s)]
+	| String s -> push ctx [VStr (unescape_chars s p)]
 	| Ident s -> assert false
 
 let generate_breaks ctx olds =
