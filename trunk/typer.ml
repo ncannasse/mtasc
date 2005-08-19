@@ -301,6 +301,8 @@ let ret_opt ctx p f =
 	| _ -> t_opt ctx p f.ftype
 
 let rec add_class_field ctx clctx fname stat pub get ft p =
+	if pub = IsPrivate && clctx.interface then error (Custom "Private fields are not possible in interfaces") p;
+	if stat = IsStatic && clctx.interface then error (Custom "Static fields are not possible in interfaces") p;
 	let h = (match stat with IsStatic -> clctx.statics | IsMember -> clctx.fields) in
 	let f = (try Some (Hashtbl.find h fname) with Not_found -> None) in
 	match get with
@@ -745,7 +747,8 @@ let rec type_expr ctx (e,p) =
 		(match decl with
 		| EVal ((EConst (Ident x),_) as v) , p ->
 			let t = type_val ctx v in
-			unify ctx.istring t p
+			unify ctx.istring t p;
+			unify t ctx.istring p;
 		| EVars (_,_,[x,t,None]) , p ->
 			unify ctx.istring (t_opt ctx p t) p;
 			define_local ctx x ctx.istring p
@@ -875,6 +878,7 @@ let type_class ctx cpath herits e imports file interf native s =
 		imports = imports;
 	} in
 	Hashtbl.add imports.paths clctx.name { imp_path = clctx.path; imp_used = true; imp_pos = pos s };
+	if Hashtbl.mem ctx.classes cpath then error (Custom ("Redefinition of class " ^ s_type_path cpath ^ ", please check using -v that the file is not referenced several times")) (pos s);
 	Hashtbl.add ctx.classes cpath clctx;
 	ctx.current <- clctx;
 	let herits = List.map (function
@@ -1028,6 +1032,7 @@ let check_interfaces ctx =
 					match resolve cli f.f_name with
 					| None -> error (Custom ("Missing field " ^ f.f_name ^ " required by " ^ s_type_path i.path)) { pfile = clctx.file; pmin = 0; pmax = 0 }
 					| Some f2 -> 
+						if f2.f_public = IsPrivate then error (Custom ("Field " ^ f.f_name ^ " is declared in an interface and should be public")) f2.f_pos;
 						unify f2.f_type f.f_type f2.f_pos;
 						if not (loopeq true f.f_type f2.f_type) then error (Custom ("Field " ^ f.f_name ^ " type is different from the one defined in " ^ s_type_path i.path)) f2.f_pos
 			) i.fields
