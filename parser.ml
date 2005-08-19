@@ -128,17 +128,17 @@ and parse_class interf = parser
 	| [< '(Next,_); n = parse_class interf >] -> n
 	| [< '(BkOpen,_); _ = parse_metadata; i = parse_class interf >] -> i
 	| [< _ = parse_include; s = parse_class interf >] -> s
-	| [< flags = parse_field_flags IsMember IsPublic; f = parse_class_field flags interf; fl , p = parse_class interf >] -> f :: fl , p
+	| [< flags = parse_field_flags IsMember None; f = parse_class_field flags interf; fl , p = parse_class interf >] -> f :: fl , p
 
 and parse_field_flags stat pub = parser
-	| [< '(Kwd Static,_); f = parse_field_flags IsStatic pub >] -> f
-	| [< '(Kwd Public,_); f = parse_field_flags stat IsPublic >] -> f
-	| [< '(Kwd Private,_); f = parse_field_flags stat IsPrivate >] -> f
-	| [< >] -> stat , pub
+	| [< '(Kwd Static,_) when stat = IsMember; f = parse_field_flags IsStatic pub >] -> f
+	| [< '(Kwd Public,_) when pub = None; f = parse_field_flags stat (Some IsPublic) >] -> f
+	| [< '(Kwd Private,_) when pub = None; f = parse_field_flags stat (Some IsPrivate) >] -> f
+	| [< >] -> stat , (match pub with None -> IsPublic | Some p -> p)
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); g = parse_getter; '(Const (Ident name),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); g = parse_getter; name = parse_fun_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
 			fname = name;
 			fargs = args;
@@ -148,6 +148,10 @@ and parse_class_field (stat,pub) interf = parser
 			fgetter = g;
 			fexpr = if interf then None else Some (parse_expr s);
 		} , punion p1 p2
+
+and parse_fun_name = parser
+	| [< '(Const (Ident name),_) >] -> name
+	| [< '(Kwd k,p) when Filename.basename p.pfile = "TopLevel.as" >] -> s_keyword k
 
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
@@ -278,8 +282,11 @@ and parse_for_conds = parser
 	| [< >] -> []
 
 and parse_args = parser
-	| [< '(Const (Ident name),_); t = parse_type_option; al , p = parse_args >] -> (name , t) :: al , p
-	| [< '(Sep,_); al= parse_args >] -> al
+	| [< '(Const (Ident name),_); t = parse_type_option; al , p = parse_args2 >] -> (name , t) :: al , p
+	| [< '(PClose,p) >] -> [] , p
+
+and parse_args2 = parser
+	| [< '(Sep,_); '(Const (Ident name),_); t = parse_type_option; al , p = parse_args2 >] -> (name , t) :: al , p
 	| [< '(PClose,p) >] -> [] , p
 
 and parse_vars p = parser
