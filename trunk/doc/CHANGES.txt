@@ -1,5 +1,18 @@
 2005-??-?? : 1.10
 	fixed small problem with class case and import wildcards
+	added exclude wildcards and exclude without file
+	changed TRACE in "trace"
+	added AS keywords as real keywords (including deprecated ones)
+	fixed parsing of objects and array declarations and parameters lists
+	fixed escape sequences in strings and added unicode escape sequences.
+	fixed && and || precedence.
+	fixed duplicate public/static/private qualifiers.
+	fixed for...in variable forced as String
+	no more private and static fields in interfaces
+	implemented field cannot be private
+	better error when same file referenced several times.
+	delete now returns Boolean
+	fixed getVersion() in TopLevel
 
 2005-07-14 : 1.09
 	fixed problems in escape sequences such as \\t
