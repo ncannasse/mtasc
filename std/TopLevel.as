@@ -9,8 +9,6 @@ intrinsic class TopLevel {
 	static var Infinity:Number;
 	static var NaN:Number;
 
-	static function getVersion():String;
-
 	static function escape(value:String):String;
 	static function unescape(value:String):String;
 	static function parseInt(value:String,radix:Number):Number;
@@ -26,6 +24,7 @@ intrinsic class TopLevel {
 
 	// private members are not stored into _global, they need special compilation opcodes
 
+	private static function getVersion():String;
 	private static function trace(value):Void;
 	private static function eval( e : String );
 	private static function getURL(url:String,target:String,vars:String):Void;
@@ -35,7 +34,7 @@ intrinsic class TopLevel {
 	private static function string( o : Object ) : String;
 	private static function chr( o : Number ) : String;
 	private static function ord( s : String ) : Number;
-	private static function delete( o ) : Void;
+	private static function delete( o ) : Boolean;
 	private static function loadMovie( url : String, target : MovieClip, method : String ) : Void;
 	private static function loadVariables( url : String, target : MovieClip, method : String ) : Void;
 	private static function typeof( o ) : String;
