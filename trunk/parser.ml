@@ -137,7 +137,7 @@ and parse_field_flags stat pub = parser
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); '(Const (Ident name),_); name , g = parse_getter name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); g = parse_getter; '(Const (Ident name),_); '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
 			fname = name;
 			fargs = args;
@@ -175,14 +175,15 @@ and parse_eval = parser
 			fpublic = IsPublic;
 			fexpr = Some e;
 		} , punion p1 (pos e)) >] -> v
-	| [< '(Const (Ident "throw"),p1); e = parse_delete (EConst (Ident "throw"),p1) >] -> e
-	| [< '(Const (Ident "delete"),p1); e = parse_delete (EConst (Ident "delete"),p1) >] -> e
-	| [< '(Const (Ident "typeof"),p1); e = parse_delete (EConst (Ident "typeof"),p1) >] -> e
-	| [< '(Const (Ident "new"),p1); v, p2 = parse_eval; s >] ->
+	| [< '(Kwd Throw,p1); e = parse_delete (EConst (Ident "throw"),p1) >] -> e
+	| [< '(Kwd Delete,p1); e = parse_delete (EConst (Ident "delete"),p1) >] -> e
+	| [< '(Kwd Typeof,p1); e = parse_delete (EConst (Ident "typeof"),p1) >] -> e
+	| [< '(Kwd New,p1); v, p2 = parse_eval; s >] ->
 		(match v with
 		| ECall (v,args) -> parse_eval_next (ENew (v,args), punion p1 p2) s
 		| _ -> parse_eval_next (ENew ((v,p2),[]), punion p1 p2) s)
 	| [< '(Const c,p); e = parse_eval_next (EConst c,p)  >] -> e
+	| [< '(Kwd This,p); e = parse_eval_next (EConst (Ident "this"),p) >] -> e
 	| [< '(POpen,p1); e = parse_eval; '(PClose,p2); e = parse_eval_next (EParenthesis e , punion p1 p2) >] -> e
 	| [< '(BrOpen,p1); el, p2 = parse_field_list; e = parse_eval_next (EObjDecl el, punion p1 p2) >] -> e
 	| [< '(BkOpen,p1); el, p2 = parse_array; e = parse_eval_next (EArrayDecl el,punion p1 p2) >] -> e
@@ -193,12 +194,12 @@ and parse_eval = parser
 and parse_eval_next e = parser
 	| [< '(BkOpen,_); e2 = parse_eval; '(BkClose,p2); e = parse_eval_next (EArray (e,e2) , punion (pos e) p2) >] -> e
 	| [< '(Binop op,_); e2 = parse_eval; >] -> make_binop op e e2
-	| [< '(Const (Ident "and"),_); e2 = parse_eval; >] -> make_binop OpBoolAnd e e2
+	| [< '(Kwd And,_); e2 = parse_eval; >] -> make_binop OpBoolAnd e e2
 	| [< '(Dot,_); '(Const (Ident field),p2); e = parse_eval_next (EField (e,field), punion (pos e) p2) >] -> e
 	| [< '(POpen,_); args = parse_eval_list; '(PClose,p2); e = parse_eval_next (ECall (e,args), punion (pos e) p2) >] -> e
 	| [< '(Unop op,p2) when is_postfix e op; e = parse_eval_next (EUnop (op,Postfix,e), punion (pos e) p2) >] -> e
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
-	| [< '(Const (Ident "instanceof"),p); v = parse_eval; s >] ->
+	| [< '(Kwd InstanceOf,p); v = parse_eval; s >] ->
 		let iof v = ECall ((EConst (Ident "instanceof"), p),[e;v]) , punion (pos e) (pos v) in
 		let rec loop = function			
 			| EBinop (op,e1,e2) , pv -> EBinop (op,loop e1,e2) , punion p pv
@@ -237,18 +238,24 @@ and parse_eval_list = parser
 	| [< >] -> []
 
 and parse_eval_list2 = parser
-	| [< '(Sep,_); vl = parse_eval_list >] -> vl
+	| [< '(Sep,_); v = parse_eval; vl = parse_eval_list2 >] -> v :: vl
 	| [< '(Next,_) >] -> []
 	| [< >] -> []
 
 and parse_field_list = parser
-	| [< '(Const (Ident fname),_); '(DblDot,_); e = parse_eval; el , p = parse_field_list >] -> (fname,e) :: el , p
-	| [< '(Sep,_); el = parse_field_list >] -> el
+	| [< '(Const (Ident fname),_); '(DblDot,_); e = parse_eval; el , p = parse_field_list2 >] -> (fname,e) :: el , p
+	| [< '(BrClose,p) >] -> [] , p
+
+and parse_field_list2 = parser
+	| [< '(Sep,_); '(Const (Ident fname),_); '(DblDot,_); e = parse_eval; el , p = parse_field_list2 >] -> (fname,e) :: el , p
 	| [< '(BrClose,p) >] -> [] , p
 
 and parse_array = parser
-	| [< e = parse_eval; el , p = parse_array >] -> e :: el , p
-	| [< '(Sep,_); e = parse_array >] -> e
+	| [< e = parse_eval; el , p = parse_array2 >] -> e :: el , p
+	| [< '(BkClose,p) >] -> [] , p
+
+and parse_array2 = parser
+	| [< '(Sep,_); e = parse_eval; el , p = parse_array2 >] -> e :: el , p
 	| [< '(BkClose,p) >] -> [] , p
 
 and parse_else p = parser
@@ -261,7 +268,7 @@ and parse_expr_opt = parser
 	| [< '(Next,p); >] -> EBlock [] , p
 
 and parse_for p c = parser
-	| [< '(Const (Ident "in"),_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,wrap_var e) , punion p p2
+	| [< '(Kwd In,_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,wrap_var e) , punion p p2
 	| [< cl = parse_for_conds; l1 = parse_eval_list; l2 = parse_eval_list; '(PClose,p2); e = parse_expr_opt >] -> EFor(c :: cl,l1,l2,wrap_var e) , punion p p2
 
 and parse_for_conds = parser
@@ -332,13 +339,10 @@ and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()
 	| [< '(_) ; () = parse_metadata >] -> ()
 
-and parse_getter name = parser
-	| [< '(Const (Ident fname),_); >] -> 
-		fname, (match name with
-		| "get" -> Getter
-		| "set" -> Setter
-		| _ -> raise Stream.Failure)
-	| [< >] -> name , Normal
+and parse_getter = parser
+	| [< '(Kwd Get,_) >] -> Getter
+	| [< '(Kwd Set,_) >] -> Setter
+	| [< >] -> Normal
 
 and parse_include = parser 
 	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String inc),p2) >] ->
