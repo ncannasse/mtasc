@@ -718,6 +718,9 @@ and generate_call ?(newcall=false) ctx v vl =
 		List.iter (generate_val ctx) (List.rev args);
 		push ctx [VInt nargs; VSuper; VStr fname];		
 		call ctx VarObj nargs;
+	| EConst (Ident "getVersion") , _ ->
+		push ctx [VStr "/:$version"];
+		write ctx AEval;
 	| _ , _ ->
 		let nargs = List.length vl in
 		List.iter (generate_val ctx) (List.rev vl);
