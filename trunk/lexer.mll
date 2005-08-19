@@ -48,7 +48,9 @@ let keywords =
 		[Function;Class;Static;Var;If;Else;While;Do;For;
 		Break;Return;Continue;Interface;Extends;Implements;Import;
 		Switch;Case;Default;Intrinsic;Dynamic;Public;Private;Try;
-		Catch;Finally;With];
+		Catch;Finally;With;
+		Get;Set;In;InstanceOf;New;This;Throw;Typeof;Delete;Void;
+		Add;And;Or;Eq;Ne;KwdNot;Le;Lt;Ge;Gt;IfFrameLoaded;On;OnClipEvent;TellTarget];
 	h
 
 let init file =

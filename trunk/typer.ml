@@ -478,9 +478,6 @@ let type_constant ctx c e p =
 			if ctx.in_static then error (Custom "Cannot access super in static function") p;
 			Class ctx.current.super
 		end
-	| Ident "lt" | Ident "add" | Ident "and" | Ident "eq" | Ident "ge"
-	| Ident "gt" | Ident "le" | Ident "ne" | Ident "not" | Ident "or" ->
-		error (Custom "You cannot use a deprecated keyword as a variable name") p
 	| Ident name ->
 		type_ident ctx name e p
 

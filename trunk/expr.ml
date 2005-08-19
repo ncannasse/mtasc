@@ -51,7 +51,20 @@ type keyword =
 	| Catch
 	| Finally
 	| With
-
+	| Get
+	| Set
+	| In
+	| InstanceOf
+	| New
+	| This
+	| Throw
+	| Typeof
+	| Delete
+	| Void
+	(* deprecated *)
+	| Add | And | Or | Eq | Ne | KwdNot | Le | Lt | Ge | Gt
+	| IfFrameLoaded | On | OnClipEvent | TellTarget
+	
 type binop =
 	| OpAdd
 	| OpMult
@@ -264,6 +277,31 @@ let s_keyword = function
 	| Catch -> "catch"
 	| Finally -> "finally"
 	| With -> "with"
+	| Get -> "get"
+	| Set -> "set"
+	| In -> "in"
+	| InstanceOf -> "instanceof"
+	| New -> "new"
+	| This -> "this"
+	| Throw -> "throw"
+	| Typeof -> "typeof"
+	| Delete -> "delete"
+	| Void -> "void"
+	(* deprecated *)
+	| Add -> "add"
+	| And -> "and"
+	| Or -> "or"
+	| Eq -> "eq"
+	| Ne -> "ne"
+	| KwdNot -> "not"
+	| Le -> "le"
+	| Lt -> "lt"
+	| Ge -> "ge"
+	| Gt -> "gt"
+	| IfFrameLoaded -> "ifFrameLoaded"
+	| On -> "on"
+	| OnClipEvent -> "onClipEvent"
+	| TellTarget -> "tellTarget"
 
 let rec s_binop = function
 	| OpAdd -> "+"
