@@ -645,7 +645,7 @@ and generate_call ?(newcall=false) ctx v vl =
 			generate_call ctx e 
 					(args @ [
 						(EConst (String (s_type_path (Class.path ctx.current) ^ "::" ^ ctx.curmethod))) , pos;
-						(EConst (String pos.pfile)) , pos;
+						(EConst (String (String.concat "\\\\" (String.nsplit pos.pfile "\\")))) , pos;
 						(EConst (Int (string_of_int line))) , pos
 					]))
 	| EConst (Ident "instanceof") , [v1;v2] ->
