@@ -839,8 +839,8 @@ let generate_local_var ctx (vname,_,vinit) =
 			setvar ctx (VarReg r)
 	end
 
-let gen_forins ctx =
-	for i = 1 to ctx.forins do
+let gen_forins ctx all =
+	for i = 1 to (if all then ctx.forins else 1) do
 		push ctx [VNull];
 		write ctx AEqual;
 		write ctx ANot;
@@ -912,7 +912,7 @@ let rec generate_expr ctx (e,p) =
 		do_jmp ctx start_pos;
 		let has_breaks = (ctx.breaks <> []) in
 		generate_breaks ctx old_breaks;
-		if has_breaks then gen_forins ctx;
+		if has_breaks then gen_forins ctx false;
 		jump_end();
 		ctx.forins <- ctx.forins - 1;
 		ctx.continue_pos <- old_continue;
@@ -962,11 +962,11 @@ let rec generate_expr ctx (e,p) =
 	| EContinue ->
 		do_jmp ctx ctx.continue_pos
 	| EReturn None ->
-		gen_forins ctx;
+		gen_forins ctx true;
 		write ctx (APush [PUndefined]);
 		write ctx AReturn	
 	| EReturn (Some v) ->
-		gen_forins ctx;
+		gen_forins ctx true;
 		generate_val ctx v;
 		write ctx AReturn
 	| ESwitch (v,cases,edefault) ->
