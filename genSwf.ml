@@ -138,9 +138,9 @@ let call ctx kind n =
 
 let new_call ctx kind n  =
 	let op , n = (match kind with
-		| VarReg n ->
-			write ctx (APush [PReg n;PUndefined]);
-			ANewMethod , n + 2			
+		| VarReg r ->
+			write ctx (APush [PReg r;PUndefined]);
+			ANewMethod , n + 2
 		| VarStr -> 
 			ANew , n + 1
 		| VarObj ->
