@@ -1326,6 +1326,9 @@ let generate file out ~compress exprs =
 		let ctx = new_context ctx in 
 		DynArray.add ctx.ops (AStringPool []);
 		(*//    (main class).main(this); *)
+		push ctx [VStr "MTASC_MAIN"];
+		write ctx (ASetReg 0);
+		write ctx APop;
 		push ctx [VStr "this"];
 		write ctx AEval;
 		push ctx [VInt 1];
@@ -1335,7 +1338,7 @@ let generate file out ~compress exprs =
 		push ctx [VStr "main"];
 		call ctx VarObj 1;
 		write ctx APop;
-		tags := ("__Packages.MTASC.main",ctx.idents,ctx.ops) :: !tags;
+		tags := ("",ctx.idents,ctx.ops) :: !tags;
 	);
 	tags := List.rev !tags;
 	List.iter (fun (n,idents,ops) ->
@@ -1377,6 +1380,9 @@ let generate file out ~compress exprs =
 					loop_tag_rec cid l
 			and loop_tag_rec cid = function				
 				| [] -> []
+				| ("",_,ops) :: l ->
+					tag ~ext:true (TDoAction ops) ::
+					loop_tag (cid + 1) l
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
 					tag ~ext:true (TExport [{ exp_id = cid; exp_name = name }]) ::
@@ -1388,7 +1394,7 @@ let generate file out ~compress exprs =
 		end
 	in	
 	let replace_package p cid x y z = 
-		if p = "__Packages.MTASC" || p = "__Packages.MTASC.main" || (not !use_components && not !keep) then
+		if p = "__Packages.MTASC" || (not !use_components && not !keep) then
 			[]
 		else try 			
 			let t = List.find (fun (n,_,_) -> p = n) !tags in
@@ -1406,8 +1412,11 @@ let generate file out ~compress exprs =
 		| [] ->
 			if not !found then failwith ("Frame " ^ string_of_int !frame ^ " not found in SWF");
 			List.rev acc
-		| ({ tdata = TDoAction _ } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
-			insert loop [x2;x1] acc l
+		| ({ tdata = TDoAction a } as x1) :: ({ tdata = TShowFrame } as x2) :: l ->
+			if DynArray.length a > 0 && (match DynArray.get a 0 with AStringPool ("MTASC_MAIN" :: _) -> true | _ -> false) then
+				loop acc (x2 :: l)
+			else
+				insert loop [x2;x1] acc l
 		| ({ tdata = TShowFrame } as x) :: l ->
 			insert loop [x] acc l
 		| ({ tdata = TClip _ } as x) :: ({ tdata = TExport [{ exp_name = e; exp_id = cid }] } as y) :: ({ tdata = TDoInitAction _ } as z) :: l ->
