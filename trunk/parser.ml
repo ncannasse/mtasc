@@ -162,7 +162,7 @@ and parse_expr = parser
 	| [< '(Kwd Continue,p); >] -> EContinue , p
 	| [< '(Kwd While,p1); v = parse_eval; e = parse_expr_opt >] -> EWhile (v,wrap_var e,NormalWhile) , punion p1 (pos e)
 	| [< '(Kwd Do,p1); e = parse_expr; '(Kwd While,_); v = parse_eval; >] -> EWhile (v,wrap_var e,DoWhile) , punion p1 (pos v)
-	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el , eo, p2 = parse_switch >] -> ESwitch (v,el,eo) , punion p1 p2
+	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el, p2 = parse_switch false >] -> ESwitch (v,el) , punion p1 p2
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (IsMember,IsPublic,vl), punion p1 p2
 	| [< '(Kwd Try,p1); e = parse_expr; c = parse_catches; f = parse_finally >] -> ETry (wrap_var e,ref c,f) , punion p1 (pos e)
 	| [< '(Kwd With,p1); v = parse_eval; e = parse_expr >] -> EWith (v,wrap_var e) , punion p1 (pos e)
@@ -301,12 +301,12 @@ and parse_var_init = parser
 	| [< '(Binop OpAssign,_); v = parse_eval >] -> Some v
 	| [< >] -> None
 
-and parse_switch = parser
-	| [< '(BrClose,p) >] -> [] , None , p
-	| [< '(Kwd Case,p); v = parse_eval; '(DblDot,_); c = parse_switch_clause; el, eo, p2 = parse_switch >] -> (v,(EBlock c,p)) :: el , eo , p2
-	| [< '(Kwd Default,p); '(DblDot,_); c = parse_switch_clause; el, eo, p2 = parse_switch >] -> 
-		if eo <> None then error Duplicate_default p;
-		el , Some (EBlock c,p) , p2
+and parse_switch def = parser
+	| [< '(BrClose,p) >] -> [] , p
+	| [< '(Kwd Case,p); v = parse_eval; '(DblDot,_); c = parse_switch_clause; el, p2 = parse_switch def >] -> (Some v,(EBlock c,p)) :: el , p2
+	| [< '(Kwd Default,p); '(DblDot,_); c = parse_switch_clause; el, p2 = parse_switch true >] -> 		
+		if def then error Duplicate_default p;
+		(None, (EBlock c,p)) :: el , p2
 
 and parse_switch_clause = parser
 	| [< e = parse_expr; el = parse_switch_clause >] -> e :: el

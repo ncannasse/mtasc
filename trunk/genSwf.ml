@@ -336,8 +336,8 @@ let rec used_in_block curblock vname e =
 			vloop v || loop e || (match eopt with None -> false | Some e -> loop e)
 		| EWhile (v,e,_) ->
 			vloop v || loop e
-		| ESwitch (v,cases,eopt) ->
-			vloop v || List.exists (fun (v,e) -> vloop v || loop e) cases || (match eopt with None -> false | Some e -> loop e)
+		| ESwitch (v,cases) ->
+			vloop v || List.exists (fun (v,e) -> (match v with None -> false | Some v -> vloop v) || loop e) cases
 		| ETry (e,cl,fopt) ->
 			loop e || List.exists (fun (n,_,e) -> vname = n || loop e) !cl || (match fopt with None -> false | Some e -> loop e)
 		| EWith (v,e) ->
@@ -969,7 +969,7 @@ let rec generate_expr ctx (e,p) =
 		gen_forins ctx true;
 		generate_val ctx v;
 		write ctx AReturn
-	| ESwitch (v,cases,edefault) ->
+	| ESwitch (v,cases) ->
 		generate_val ctx v;
 		write ctx (ASetReg 0);
 		let old_breaks = ctx.breaks in
@@ -980,20 +980,18 @@ let rec generate_expr ctx (e,p) =
 				first_case := false
 			else
 				push ctx [VReg 0];
-			generate_val ctx v;
-			write ctx APhysEqual;
-			cjmp ctx , e
+			match v with
+			| None ->
+				jmp ctx , e
+			| Some v -> 
+				generate_val ctx v;
+				write ctx APhysEqual;
+				cjmp ctx , e
 		) cases in
-		let jump_default = jmp ctx in
 		List.iter (fun (j,e) ->
 			j();
 			generate_expr ctx e
 		) cases;
-		jump_default();
-		(match edefault with
-		| None -> ()
-		| Some e ->
-			generate_expr ctx e);
 		generate_breaks ctx old_breaks
 	| ETry (e,cl,fo) ->
 		let tdata = {

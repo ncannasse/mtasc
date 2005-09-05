@@ -283,8 +283,8 @@ let rec has_return any (e,p) =
 		has_return e || (match eo with None -> false | Some e -> has_return e)
 	| EWhile (_,e,_) ->
 		has_return e
-	| ESwitch (_,cases,def) ->
-		List.exists (fun (_,e) -> has_return e) cases || (match def with None -> false | Some e -> has_return e)
+	| ESwitch (_,cases) ->
+		List.exists (fun (_,e) -> has_return e) cases
 	| ETry (e,cl,fo) ->			
 		(has_return e) || List.exists (fun (_,_,e) -> has_return e) !cl || (match fo with None -> false | Some e -> has_return e)
 	| EWith (_,e) ->
@@ -764,13 +764,15 @@ let rec type_expr ctx (e,p) =
 	| EWhile (v,e,_) ->
 		no_void (type_val ctx v) (pos v);
 		type_expr ctx e
-	| ESwitch (v,cases,def) ->
+	| ESwitch (v,cases) ->
 		let t = type_val ctx v in
 		List.iter (fun (v,e) ->
-			unify (type_val ctx v) t (pos v);
+			(match v with
+			| None -> ()
+			| Some v ->
+				unify (type_val ctx v) t (pos v));
 			type_expr ctx e
 		) cases;
-		(match def with None -> () | Some e -> type_expr ctx e)
 	| ETry (etry,cl,fo) ->
 		type_expr ctx etry;
 		let no_type = ref false in
@@ -837,6 +839,7 @@ let rec type_class_fields ctx clctx comp (e,p) =
 	match e with
 	| EBlock el -> List.iter (type_class_fields ctx clctx comp) el
 	| EVars (stat,pub,vl) ->
+		if clctx.interface then error (Custom "Interface cannot contain variable declaration") p;
 		List.iter (fun (vname,vtype,vinit) ->
 			let t = t_opt ctx p vtype in
 			add_class_field ctx clctx vname stat pub Normal t p;
@@ -942,11 +945,11 @@ let type_file ctx req_path file el pos =
 		match s with
 		| EClass (t,hl,e) ->
 			if t <> req_path then clerror t (snd e);
-			if !clctx <> None then assert false;
+			if !clctx <> None then error (Custom "Cannot declare several classes in same file") p;
 			clctx := Some (type_class ctx t hl e imports file false (List.exists ((=) HIntrinsic) hl) sign)
 		| EInterface (t,hl,e) ->
 			if t <> req_path then clerror t (snd e);
-			if !clctx <> None then assert false;
+			if !clctx <> None then error (Custom "Cannot declare several classes in same file") p;
 			clctx := Some (type_class ctx t hl e imports file true false sign)
 		| EImport (path,Some name) ->
 			if Hashtbl.mem imports.paths name then error (Custom "Duplicate Import") p;

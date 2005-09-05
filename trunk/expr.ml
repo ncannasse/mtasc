@@ -189,7 +189,7 @@ and expr_def =
 	| EForIn of expr * eval * expr
 	| EIf of eval * expr * expr option
 	| EWhile of eval * expr * while_flag
-	| ESwitch of eval * (eval * expr) list * expr option
+	| ESwitch of eval * (eval option * expr) list
 	| ETry of expr * (string * type_path option * expr) list ref * expr option
 	| EWith of eval * expr
 	| EReturn of eval option
@@ -399,9 +399,8 @@ let rec check_expr (e,p) =
 		(match eo with None -> () | Some e -> check_expr e)
 	| EWhile (_,e,_) ->
 		check_expr e
-	| ESwitch (_,cl,eo) ->
+	| ESwitch (_,cl) ->
 		List.iter (fun (_,e) -> check_expr e) cl;
-		(match eo with None -> () | Some e -> check_expr e)
 	| ETry (e,cl,eo) ->
 		check_expr e;
 		List.iter (fun (_,_,e) -> check_expr e) !cl;
