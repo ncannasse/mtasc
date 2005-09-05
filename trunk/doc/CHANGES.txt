@@ -13,6 +13,13 @@
 	better error when same file referenced several times.
 	delete now returns Boolean
 	fixed getVersion() in TopLevel
+	fixed problem in class replace when not -keep and -mx
+	changed -main : now in DoAction and not InitAction
+	fixed stack corruption in new var(expr).
+	fixed break with several stacked for..in
+	disabled variables in interfaces
+	added error message when several classes in same file
+	changed switch implementation
 
 2005-07-14 : 1.09
 	fixed problems in escape sequences such as \\t
