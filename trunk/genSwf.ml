@@ -1388,9 +1388,9 @@ let generate file out ~compress exprs =
 		end
 	in	
 	let replace_package p cid x y z = 
-		if p = "__Packages.MTASC" || p = "__Packages.MTASC.main" then
+		if p = "__Packages.MTASC" || p = "__Packages.MTASC.main" || (not !use_components && not !keep) then
 			[]
-		else try 
+		else try 			
 			let t = List.find (fun (n,_,_) -> p = n) !tags in
 			tags := List.filter ((!=) t) !tags;
 			[x;y;tag ~ext:true (TDoInitAction { dia_id = cid; dia_actions = (match t with (_,_,o) -> o) })]
