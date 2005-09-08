@@ -138,7 +138,7 @@ and parse_field_flags stat pub = parser
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); g = parse_getter; name = parse_fun_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); name, g = parse_fun_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
 		EFunction {
 			fname = name;
 			fargs = args;
@@ -150,8 +150,15 @@ and parse_class_field (stat,pub) interf = parser
 		} , punion p1 p2
 
 and parse_fun_name = parser
-	| [< '(Const (Ident name),_) >] -> name
-	| [< '(Kwd k,p) when Filename.basename p.pfile = "TopLevel.as" >] -> s_keyword k
+	| [< '(Kwd k,p) when Filename.basename p.pfile = "TopLevel.as" >] -> s_keyword k , Normal
+	| [< '(Const (Ident name),_); s >] ->
+		match name with
+		| "get" | "set" ->
+			(match s with parser
+			| [< '(Const (Ident name2),_) >] -> name2 , if name = "get" then Getter else Setter
+			| [< >] -> name , Normal)
+		| _ ->
+			name , Normal
 
 and parse_expr = parser
 	| [< '(BrOpen,p1); el , p2 = parse_block parse_expr p1 >] -> EBlock el , punion p1 p2
@@ -346,11 +353,6 @@ and parse_import2 name = parser
 and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()
 	| [< '(_) ; () = parse_metadata >] -> ()
-
-and parse_getter = parser
-	| [< '(Kwd Get,_) >] -> Getter
-	| [< '(Kwd Set,_) >] -> Setter
-	| [< >] -> Normal
 
 and parse_include = parser 
 	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String inc),p2) >] ->

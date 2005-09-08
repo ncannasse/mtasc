@@ -49,7 +49,7 @@ let keywords =
 		Break;Return;Continue;Interface;Extends;Implements;Import;
 		Switch;Case;Default;Intrinsic;Dynamic;Public;Private;Try;
 		Catch;Finally;With;
-		Get;Set;In;InstanceOf;New;This;Throw;Typeof;Delete;Void;
+		In;InstanceOf;New;This;Throw;Typeof;Delete;Void;
 		Add;And;Or;Eq;Ne;KwdNot;Le;Lt;Ge;Gt;IfFrameLoaded;On;OnClipEvent;TellTarget];
 	h
 

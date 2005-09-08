@@ -51,8 +51,6 @@ type keyword =
 	| Catch
 	| Finally
 	| With
-	| Get
-	| Set
 	| In
 	| InstanceOf
 	| New
@@ -277,8 +275,6 @@ let s_keyword = function
 	| Catch -> "catch"
 	| Finally -> "finally"
 	| With -> "with"
-	| Get -> "get"
-	| Set -> "set"
 	| In -> "in"
 	| InstanceOf -> "instanceof"
 	| New -> "new"
