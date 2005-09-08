@@ -974,6 +974,7 @@ let rec generate_expr ctx (e,p) =
 		write ctx (ASetReg 0);
 		let old_breaks = ctx.breaks in
 		let first_case = ref true in
+		let def_pos = ref (fun () -> ()) in
 		ctx.breaks <- [];
 		let cases = List.map (fun (v,e) ->
 			if !first_case then
@@ -982,16 +983,18 @@ let rec generate_expr ctx (e,p) =
 				push ctx [VReg 0];
 			match v with
 			| None ->
-				jmp ctx , e
+				(fun () -> (!def_pos)(); def_pos := (fun() -> ())) , e
 			| Some v -> 
 				generate_val ctx v;
 				write ctx APhysEqual;
 				cjmp ctx , e
 		) cases in
+		def_pos := jmp ctx;
 		List.iter (fun (j,e) ->
 			j();
 			generate_expr ctx e
 		) cases;
+		(!def_pos)();
 		generate_breaks ctx old_breaks
 	| ETry (e,cl,fo) ->
 		let tdata = {
