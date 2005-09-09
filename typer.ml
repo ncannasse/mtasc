@@ -683,8 +683,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		no_void (type_val ctx v) (pos v);
 		let t1 = type_val ctx v1 in
 		let t2 = type_val ctx v2 in
-		unify t2 t1 (pos v2);
-		t1
+		tcommon ctx t1 t2 p
 	| EUnop (Not,_,v) ->
 		no_void (type_val ctx v) (pos v);
 		ctx.ibool
