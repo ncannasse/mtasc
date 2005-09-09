@@ -20,6 +20,7 @@
 	disabled variables in interfaces
 	added error message when several classes in same file
 	changed switch implementation
+	fixed typing of ?:
 
 2005-07-14 : 1.09
 	fixed problems in escape sequences such as \\t
