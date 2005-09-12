@@ -71,7 +71,7 @@ dynamic intrinsic class MovieClip
 	function lineStyle(thickness:Number,rgb:Number,alpha:Number):Void;
 	function endFill():Void;
 	function clear():Void;
-	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):Void;
+	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):TextField; /* Void before Flash 8 */
 	function getTextSnapshot():TextSnapshot;
 
 	function onData():Void;
