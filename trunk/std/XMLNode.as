@@ -25,5 +25,11 @@ intrinsic class XMLNode
 	function getTreeNodeAt(index:Number):XMLNode;
 	function removeTreeNodeAt(index:Number):XMLNode;
 	function removeTreeNode():XMLNode;
+
+	var prefix:String;
+	var localName:String;
+	var namespaceURI:String;
+	function getPrefixForNamespace(namespaceURI:String):String;
+	function getNamespaceForPrefix(prefix:String):String;
 }
 
