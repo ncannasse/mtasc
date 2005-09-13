@@ -29,4 +29,8 @@ intrinsic class Key
 	static function addListener(listener:Object):Void;
 	static function removeListener(listener:Object):Boolean;
 
+	// Flash 8
+
+	static function isAccessible() : Boolean;
+
 }

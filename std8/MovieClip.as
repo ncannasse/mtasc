@@ -71,7 +71,7 @@ dynamic intrinsic class MovieClip
 	function lineStyle(thickness:Number,rgb:Number,alpha:Number):Void;
 	function endFill():Void;
 	function clear():Void;
-	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):Void;
+	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):TextField; /* Void before Flash 8 */
 	function getTextSnapshot():TextSnapshot;
 
 	function onData():Void;
@@ -92,6 +92,18 @@ dynamic intrinsic class MovieClip
 	function onRollOver():Void;
 	function onSetFocus(oldFocus:Object):Void;
 	function onUnload():Void;
+
+	// FLASH 8
+
+	var filters : Array;
+	var blendMode : String;
+	var cacheAsBitmap : Boolean;
+	var opaqueBackground : Number;
+	var scrollRect : Object;
+	var transform : flash.geom.Transform;
+	var scale9Grid : flash.geom.Rectangle;
+	function getRect( bounds : Object ) : Object;
+	function attachBitmap( bmp : flash.display.BitmapData, depth : Number, pixelSnapping : String, smoothing : Boolean ) : Void;
 
 }
 
