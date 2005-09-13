@@ -18,10 +18,10 @@ intrinsic class flash.display.BitmapData {
 	function setPixel32( x : Number, y : Number, color : Number ) : Void;
 
 	function fillRect( r : Rectangle, color : Number ) : Void;
-	function copyPixels( src : BitmapData, srcRect : Rectangel, dst : Point, alpha : BitmapData, alphaPos : Point, mergeAlpha : Boolean ) : Void;
+	function copyPixels( src : BitmapData, srcRect : Rectangle, dst : Point, alpha : BitmapData, alphaPos : Point, mergeAlpha : Boolean ) : Void;
 	function applyFilter( source : BitmapData, sourceRect : Rectangle, dest : Point, filter : flash.filters.BitmapFilter ) : Number;
 	function scroll( dx : Number, dy : Number ) : Void;
-	function threshold( src : BitmapData , srcRect : Rectangle, dstPoint : Point, op : String, threshold : Number, color : Number, mask : NUmber, copy : Boolean ) : Number;
+	function threshold( src : BitmapData , srcRect : Rectangle, dstPoint : Point, op : String, threshold : Number, color : Number, mask : Number, copy : Boolean ) : Number;
 	function draw( source : Object, matrix : flash.geom.Matrix, colortrans : flash.geom.ColorTransform, blendMode : Object, clipRect : Rectangle, smooth : Boolean) : Void;
 	function pixelDissolve( src : BitmapData, srcRect : Rectangle, dst : Point, seed : Number, npixels : Number, fillColor : Number ) : Number;
 	function floodFill( x : Number, y : Number, color : Number ) : Void;
@@ -32,7 +32,7 @@ intrinsic class flash.display.BitmapData {
 	function paletteMap( source : BitmapData, srcRect : Rectangle, dst : Point, reds : Array, greens, Array, blues : Array, alphas : Array ) : Void;
 	function merge( src : BitmapData, srcRect : Rectangle, dst : Point, redMult : Number, greenMult : Number, blueMult : Number, alphaMult : Number ) : Void;
 	function noise( seed : Number, low : Number, high : Number, channels : Number, gray : Boolean ) : Void;
-	function copyChannel( source : BitmapData, sourceRect : Rectangle, dest : Point, alphaBitmap : BitmapData], alphaPoint : Point, mergeAlpha : Boolean ) : Void;
+	function copyChannel( source : BitmapData, sourceRect : Rectangle, dest : Point, alphaBitmap : BitmapData, alphaPoint : Point, mergeAlpha : Boolean ) : Void;
 	function clone() : flash.display.BitmapData;
 	function dispose() : Void;
 	function generateFilterRect(sourceRect : Rectangle, filter : flash.filters.BitmapFilter ) : Rectangle;
