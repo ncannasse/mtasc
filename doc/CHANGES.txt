@@ -1,4 +1,4 @@
-2005-??-?? : 1.10
+2005-09-13 : 1.10
 	fixed small problem with class case and import wildcards
 	added exclude wildcards and exclude without file
 	changed TRACE in "trace"
