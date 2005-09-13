@@ -9,7 +9,7 @@ intrinsic class flash.filters.GlowFilter {
 	var alpha : Number;
 	var color : Number;
 
-	function GlowFilter();
+	function GlowFilter(color : Number, alpha : Number, blurX : Number, blurY : Number, strength : Number, quality : Number, inner : Boolean, knockout : Boolean)
 	function clone() : GlowFilter;
 
 }

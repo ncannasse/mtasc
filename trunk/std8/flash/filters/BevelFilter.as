@@ -13,7 +13,7 @@ intrinsic class flash.filters.BevelFilter {
 	var angle : Number;
 	var distance : Number;
 
-	function BevelFilter();
+	function BevelFilter(distance : Number, angle : Number, highlightColor : Number, highlightAlpha : Number, shadowColor : Number, shadowAlpha : Number, blurX : Number, blurY : Number, strength : Number, quality : Number, type : String, knockout : Boolean);
 	function clone() : BevelFilter;
 
 }

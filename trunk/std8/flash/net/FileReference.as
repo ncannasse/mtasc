@@ -1,21 +1,20 @@
 intrinsic class flash.net.FileReference {
 
-	var creator;
-	var creationDate;
-	var modificationDate;
+	var creator : String;
+	var creationDate : Date;
+	var modificationDate : Date;
 	var size : Number;
-	var type;
+	var type : String;
 	var name : String;
 
 	function FileReference();
 
-	function browse();
-	function upload();
-	function download();
-	function cancel();
+	function browse( typeList : Array ) : Boolean;
+	function upload( url : String ) : Boolean;
+	function download( url : String, defaultName : String ) : Boolean;
+	function cancel() : Void;
 
-	var _listeners : Array;
-	function addListener();
-	function removeListener();
+	function addListener( listener : Object ) : Void;
+	function removeListener( listener : Object ) : Boolean;
 
 }

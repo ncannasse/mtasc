@@ -30,7 +30,7 @@ intrinsic class Button
 	var trackAsMenu:Boolean;
 	var menu:ContextMenu;
 
-	var scale9Grid;
+	var scale9Grid : flash.geom.Rectangle;
 	var filters : Array;
 	var cacheAsBitmap : Boolean;
 	var blendMode : String;

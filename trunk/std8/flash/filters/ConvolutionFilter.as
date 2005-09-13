@@ -10,7 +10,7 @@ intrinsic class flash.filters.ConvolutionFilter {
 	var matrixX : Number;
 	var matrixY : Number;
 
-	function ConvolutionFilter();
+	function ConvolutionFilter(matrixX : Number, matrixY : Number, matrix : Array, divisor : Number, bias : Number, preserveAlpha : Boolean, clamp : Boolean, color : Number, alpha : Number);
 	function clone() : ConvolutionFilter;
 
 }
