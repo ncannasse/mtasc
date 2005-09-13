@@ -12,7 +12,7 @@ intrinsic class flash.filters.GradientBevelFilter {
 	var angle : Number;
 	var distance : Number;
 
-	function GradientBevelFilter();
+	function GradientBevelFilter(distance : Number, angle : Number, colors : Array, alphas : Array, ratios : Array, blurX : Number, blurY : Number, strength : Number, quality : Number, type : String, knockout : Boolean);
 	function clone() : GradientBevelFilter;
 
 }

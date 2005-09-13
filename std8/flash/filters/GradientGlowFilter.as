@@ -12,7 +12,7 @@ intrinsic class flash.filters.GradientGlowFilter {
 	var angle : Number;
 	var distance : Number;
 
-	function GradientGlowFilter();
+	function GradientGlowFilter(distance : Number, angle : Number, colors : Array, alphas : Array, ratios : Array, blurX : Number, blurY : Number, strength : Number, quality : Number, type : String, knockout : Boolean);
 	function clone() : GradientGlowFilter;
 
 }

@@ -4,10 +4,8 @@ intrinsic class flash.net.FileReferenceList {
 
 	function FileReferenceList();
 
-	function browse();
-
-	var _listeners : Array;
-	function addListener();
-	function removeListener();
+	function browse( typeList : Array ) : Boolean;
+	function addListener( listener : Object ) : Void;
+	function removeListener( listener : Object ) : Boolean;
 
 }

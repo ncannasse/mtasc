@@ -23,8 +23,8 @@ intrinsic class flash.geom.Matrix {
 	function concat( m : Matrix ) : Void;
 	function clone() : Matrix;
 
-	function createGradientBox( width : Number, height : Number, rot : Number, x : Number, y : Number );
-	function createBox( scalex : Number, scaley : Number, rot : Number, x : Number, y : Number );
+	function createGradientBox( width : Number, height : Number, rot : Number, tx : Number, ty : Number ) : Void;
+	function createBox( scalex : Number, scaley : Number, rot : Number, tx : Number, ty : Number ) : Void;
 
 
 }

@@ -20,7 +20,7 @@ intrinsic class flash.geom.Rectangle {
 
 	function Rectangle( x : Number, y : Number, w : Number, h : Number );
 
-	function equals( r : Rectangle ) : Boolean;
+	function equals( r : Object ) : Boolean;
 	function union( r : Rectangle ) : Rectangle;
 	function intersects( r : Rectangle ) : Boolean;
 	function intersection( r : Rectangle ) : Rectangle;

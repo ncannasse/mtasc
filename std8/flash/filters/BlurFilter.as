@@ -4,7 +4,7 @@ intrinsic class flash.filters.BlurFilter {
 	var blurX : Number;
 	var blurY : Number;
 
-	function BlurFilter();
+	function BlurFilter( bx : Number, by : Number, qual : Number );
 	function clone() : BlurFilter;
 
 }
