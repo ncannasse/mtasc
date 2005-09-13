@@ -742,7 +742,7 @@ and generate_val ?(retval=true) ctx (v,p) =
 	| EConst c ->
 		generate_constant ctx p c
 	| EParenthesis v ->
-		generate_val ctx v
+		generate_val ~retval ctx v
 	| ECast ((EStatic ([],"String"),_),v) ->
 		generate_val ctx v;
 		write ctx AToString
@@ -867,7 +867,7 @@ let rec generate_expr ctx (e,p) =
 		ctx.breaks <- [];
 		ctx.continue_pos <- start_pos;
 		ctx.opt_push <- false;
-		List.iter (generate_val ~retval:false ctx) incrs;
+		List.iter (fun v -> generate_expr ctx (EVal v,null_pos)) incrs;
 		test();
 		let jumps = ref [] in
 		List.iter (fun cond -> 
