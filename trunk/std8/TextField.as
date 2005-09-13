@@ -73,4 +73,12 @@ dynamic intrinsic class TextField
 	function onScroller(scrolledField:TextField):Void;
 	function onSetFocus(oldFocus:Object):Void;
 
+	// Flash 8
+
+	var antiAliasType : String;
+	var filters : Array;
+	var gridFitType : String;
+	var sharpness : Number;
+	var thickness : Number;
+
 }

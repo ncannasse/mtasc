@@ -26,5 +26,12 @@ intrinsic class XMLNode
 	function removeTreeNodeAt(index:Number):XMLNode;
 	function removeTreeNode():XMLNode;
 
+	// Flash 8
+
+	var prefix:String;
+	var localName:String;
+	var namespaceURI:String;
+	function getPrefixForNamespace(namespaceURI:String):String;
+	function getNamespaceForPrefix(prefix:String):String;
 }
 

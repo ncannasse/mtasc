@@ -43,4 +43,11 @@ intrinsic class Button
 	function onSetFocus(oldFocus:Object):Void;
 	function onKeyDown():Void;
 	function onKeyUp():Void;
+
+	// Flash 8
+
+	var scale9Grid : flash.geom.Rectangle;
+	var filters : Array;
+	var cacheAsBitmap : Boolean;
+	var blendMode : String;
 }
