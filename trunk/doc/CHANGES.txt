@@ -21,6 +21,7 @@
 	added error message when several classes in same file
 	changed switch implementation
 	fixed typing of ?:
+	fixed stack problem with "for"
 
 2005-07-14 : 1.09
 	fixed problems in escape sequences such as \\t
