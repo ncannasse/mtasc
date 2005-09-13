@@ -132,6 +132,10 @@ try
 	] @ !Plugin.options in
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
 	Plugin.class_path := (base_path ^ "std/") :: !Plugin.class_path;
+	if !GenSwf.version = Some 8 then begin
+		Plugin.class_path := (base_path ^ "std8/") :: !Plugin.class_path;
+		Hashtbl.remove Lexer.keywords "add";
+	end;
 	Parser.warning := (fun msg pos -> report ~do_exit:false (msg,pos) "Warning" (fun msg -> msg));
 	if !files = [] then begin
 		Arg.usage args_spec usage
