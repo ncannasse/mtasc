@@ -977,14 +977,14 @@ let rec generate_expr ctx (e,p) =
 		let def_pos = ref (fun () -> ()) in
 		ctx.breaks <- [];
 		let cases = List.map (fun (v,e) ->
-			if !first_case then
-				first_case := false
-			else
-				push ctx [VReg 0];
 			match v with
 			| None ->
 				(fun () -> (!def_pos)(); def_pos := (fun() -> ())) , e
 			| Some v -> 
+				if !first_case then
+					first_case := false
+				else
+					push ctx [VReg 0];
 				generate_val ctx v;
 				write ctx APhysEqual;
 				cjmp ctx , e
