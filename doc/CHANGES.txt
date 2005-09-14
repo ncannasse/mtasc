@@ -23,6 +23,8 @@
 	fixed typing of ?:
 	fixed stack problem with "for"
 	separate directory and "add" keyword hack for Flash8
+	(hotfixes 1.10b)
+	fixed bug in switchs (default cause stack corruption)
 
 2005-07-14 : 1.09
 	fixed problems in escape sequences such as \\t
