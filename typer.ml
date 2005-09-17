@@ -53,6 +53,7 @@ and class_field = {
 
 and class_context = {
 	path : type_path;
+	param : class_context option;
 	name : string;
 	file : string;
 	native : bool;
@@ -208,7 +209,10 @@ let rec unify ta tb p =
 			else
 				loop cl1.super
 		in
-		if not (loop cl1) then error (Cannot_unify (ta,tb)) p
+		if not (loop cl1) then 
+			(match cl1.param , cl2.param with 
+			| Some c1 , Some c2 when c1 == c2 -> ()
+			| _ -> error (Cannot_unify (ta,tb)) p)
 	| Function _, Class c
 	| Static _, Class c when c.super == c -> () (* unify with Object *)
 	| Static _ , Class cl
@@ -610,7 +614,9 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 	| EArray (v1,v2) -> 
 		let t = type_val ctx v1 in
 		let t2 = type_val ctx v2 in
-		Dyn
+		(match t with
+		| Class { param = Some c } -> Class c
+		| _ -> Dyn)
 	| EBinop (op,v1,v2) ->
 		type_binop ctx op v1 v2 p
 	| EField (v,f) ->
@@ -867,6 +873,7 @@ let type_class ctx cpath herits e imports file interf native s =
 	let old = ctx.current in
 	let rec clctx = {
 		path = cpath;
+		param = None;
 		name = snd cpath;
 		file = file;
 		native = native;
@@ -987,7 +994,38 @@ let load_file ctx file =
 	verbose_msg ("Parsed " ^ file);
 	file , expr
 
-let load_class ctx path p =
+let rec load_class ctx path p =
+	match path with
+	| [param] , "Array" when param.[0] == '#' ->
+		let cl = load_class ctx ([],"ArrayPoly") p in
+		let path2 = ExtString.String.nsplit (String.sub param 1 (String.length param - 1)) "." in
+		let rec loop acc = function
+			| [] -> assert false
+			| [x] -> List.rev acc , x
+			| x :: l -> loop (x :: acc) l
+		in
+		let path2 = loop [] path2 in
+		let cl2 = load_class ctx path2 p in
+		let arr = { cl with
+			path = path;
+			param = Some cl2;
+			fields = Hashtbl.create 0;
+			statics = Hashtbl.create 0;
+			super = cl;
+			implements = [];
+			constructor = None;
+		} in
+		let rec map_type = function
+			| Class { path = ([],"ArrayParam") } -> Class cl2
+			| Class { path = (["#ArrayParam"],"Array") } -> Class arr
+			| Function (params,ret) -> Function (List.map map_type params,map_type ret)
+			| t -> t
+		in
+		Hashtbl.iter (fun s f ->
+			Hashtbl.add arr.fields s { f with f_type = map_type f.f_type }
+		) cl.fields;
+		arr
+	| _ ->
 	try
 		Hashtbl.find ctx.classes path
 	with
