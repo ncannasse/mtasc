@@ -1011,7 +1011,6 @@ let rec load_class ctx path p =
 			param = Some cl2;
 			fields = Hashtbl.create 0;
 			statics = Hashtbl.create 0;
-			super = cl;
 			implements = [];
 			constructor = None;
 		} in
