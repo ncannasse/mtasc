@@ -753,6 +753,8 @@ and generate_val ?(retval=true) ctx (v,p) =
 		generate_val ctx v;
 		write ctx ANot;
 		write ctx ANot;
+	| ECast (_,v) when !version = Some 6 ->
+		generate_val ctx v
 	| ECast (v1,v2) ->
 		generate_val ctx v1;
 		generate_val ctx v2;
