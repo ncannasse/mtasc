@@ -43,7 +43,8 @@ dynamic intrinsic class MovieClip
 	function localToGlobal(pt:Object):Void;
 	function globalToLocal(pt:Object):Void;
 	function hitTest():Boolean;
-	function getBounds(bounds):Object;
+	function getBounds(bounds:Object):Object;
+	function getSWFVersion():Number;
 	function getBytesLoaded():Number;
 	function getBytesTotal():Number;
 	function attachAudio(id:Object):Void;
