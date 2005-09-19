@@ -1,9 +1,9 @@
 intrinsic class ArrayPoly extends Array
 {
 	function push(value : ArrayParam):Number;
-	function pop():ArrayParam;
+	function pop():Object;
 	function concat(value:Object):/*ArrayParam*/Array;
-	function shift():ArrayParam;
+	function shift():Object;
 	function unshift(value:ArrayParam):Number;
 	function slice(startIndex:Number, endIndex:Number):/*ArrayParam*/Array;
 	function join(delimiter:String):String;
