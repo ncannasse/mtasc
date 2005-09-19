@@ -43,7 +43,7 @@ dynamic intrinsic class MovieClip
 	function localToGlobal(pt:Object):Void;
 	function globalToLocal(pt:Object):Void;
 	function hitTest():Boolean;
-	function getBounds(bounds):Object;
+	function getBounds(bounds : Object):Object;
 	function getBytesLoaded():Number;
 	function getBytesTotal():Number;
 	function attachAudio(id:Object):Void;
@@ -73,6 +73,7 @@ dynamic intrinsic class MovieClip
 	function clear():Void;
 	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):TextField; /* Void before Flash 8 */
 	function getTextSnapshot():TextSnapshot;
+	function getSWFVersion():Number;
 
 	function onData():Void;
 	function onDragOut():Void;
@@ -96,7 +97,7 @@ dynamic intrinsic class MovieClip
 	// FLASH 8
 
 	var filters : Array;
-	var blendMode : String;
+	var blendMode : Object;
 	var cacheAsBitmap : Boolean;
 	var opaqueBackground : Number;
 	var scrollRect : Object;

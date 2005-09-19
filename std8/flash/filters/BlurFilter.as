@@ -1,4 +1,4 @@
-intrinsic class flash.filters.BlurFilter {
+intrinsic class flash.filters.BlurFilter extends flash.filters.BitmapFilter {
 
 	var quality : Number;
 	var blurX : Number;
