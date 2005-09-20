@@ -104,6 +104,7 @@ let verbose = ref false
 let strict_mode = ref false
 let use_components = ref false
 let local_inference = ref false
+let warn_imports = ref false
 
 let argv_pos = { pfile = "<argv>"; pmin = -1; pmax = -1 }
 
@@ -963,7 +964,7 @@ let type_file ctx req_path file el pos =
 		| EImport (pk,None) ->
 			imports.wildcards <- { wimp_path = pk; wimp_pos = p; wimp_used = false } :: imports.wildcards
 	) el;
-	if not !use_components || (match !clctx with Some { path = "mx" :: _ , _ } -> false | _ -> true) then
+	if !warn_imports && not !use_components || (match !clctx with Some { path = "mx" :: _ , _ } -> false | _ -> true) then
 		add_finalizer ctx (fun () ->
 			Hashtbl.iter (fun _ imp -> if not imp.imp_used then (!Parser.warning) "import not used" imp.imp_pos) imports.paths;
 			List.iter (fun imp -> if not imp.wimp_used then (!Parser.warning) "import not used" imp.wimp_pos) imports.wildcards;
