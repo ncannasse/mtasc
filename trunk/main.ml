@@ -123,6 +123,7 @@ try
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
 		("-strict",Arg.Unit (fun () -> Typer.strict_mode := true),": turn on strict mode");
 		("-infer",Arg.Unit (fun () -> Typer.local_inference := true),": turn on local variables inference");
+		("-wimp",Arg.Unit (fun () -> Typer.warn_imports := true),": turn on warnings for unused imports");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 		("-mx",Arg.Unit (fun () ->
 			Typer.use_components := true;
