@@ -1357,7 +1357,7 @@ let generate file out ~compress exprs =
 	let header , data = (match !header with
 		| None ->
 			let ch = IO.input_channel (open_in_bin file) in
-			let header, data = (try Swf.parse ch with IO.No_more_input -> failwith "Input swf is corrupted") in
+			let header, data = (try Swf.parse ch with IO.No_more_input | IO.Overflow _ | IO.Bits_error -> failwith "Input swf is corrupted") in
 			IO.close_in ch;
 			header , data
 		| Some h ->
