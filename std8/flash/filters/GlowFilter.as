@@ -1,4 +1,4 @@
-intrinsic class flash.filters.GlowFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.GlowFilter {
 
 	var blurX : Number;
 	var blurY : Number;

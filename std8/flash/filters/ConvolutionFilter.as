@@ -1,4 +1,4 @@
-intrinsic class flash.filters.ConvolutionFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.ConvolutionFilter {
 
 	var alpha : Number;
 	var color : Number;

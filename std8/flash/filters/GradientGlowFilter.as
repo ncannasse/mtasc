@@ -1,4 +1,4 @@
-intrinsic class flash.filters.GradientGlowFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.GradientGlowFilter {
 
 	var type : String;
 	var knockout : Boolean;

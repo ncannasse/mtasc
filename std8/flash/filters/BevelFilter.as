@@ -1,4 +1,4 @@
-intrinsic class flash.filters.BevelFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.BevelFilter {
 
 	var type : String;
 	var blurX : Number;

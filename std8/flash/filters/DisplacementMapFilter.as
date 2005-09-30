@@ -1,4 +1,4 @@
-intrinsic class flash.filters.DisplacementMapFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.DisplacementMapFilter {
 
 	var alpha : Number;
 	var color : Number;

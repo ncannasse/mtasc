@@ -32,8 +32,8 @@ intrinsic class flash.display.BitmapData {
 	function paletteMap( source : BitmapData, srcRect : Rectangle, dst : Point, reds : Array, greens, Array, blues : Array, alphas : Array ) : Void;
 	function merge( src : BitmapData, srcRect : Rectangle, dst : Point, redMult : Number, greenMult : Number, blueMult : Number, alphaMult : Number ) : Void;
 	function noise( seed : Number, low : Number, high : Number, channels : Number, gray : Boolean ) : Void;
-	function copyChannel( source : BitmapData, sourceRect : Rectangle, dest : Point, sourceChannel : Number, destChannel : Number ) : Void;
-	function clone() : BitmapData;
+	function copyChannel( source : BitmapData, sourceRect : Rectangle, dest : Point, alphaBitmap : BitmapData, alphaPoint : Point, mergeAlpha : Boolean ) : Void;
+	function clone() : flash.display.BitmapData;
 	function dispose() : Void;
 	function generateFilterRect(sourceRect : Rectangle, filter : flash.filters.BitmapFilter ) : Rectangle;
 

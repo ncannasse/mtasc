@@ -1,4 +1,4 @@
-intrinsic class flash.filters.DropShadowFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.DropShadowFilter {
 
 	var hideObject : Boolean;
 	var blurX : Number;

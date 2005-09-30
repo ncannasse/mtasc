@@ -1,4 +1,4 @@
-intrinsic class flash.filters.ColorMatrixFilter extends flash.filters.BitmapFilter {
+intrinsic class flash.filters.ColorMatrixFilter {
 
 	var matrix : Array; // 20 Numbers
 

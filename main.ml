@@ -112,7 +112,7 @@ let report ?(do_exit=true) (msg,p) etype printer =
 	if do_exit then exit 1
 ;;
 try	
-	let usage = "Motion-Twin ActionScript2 Compiler 1.10b - (c)2004-2005 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
+	let usage = "Motion-Twin ActionScript2 Compiler 1.10 - (c)2004-2005 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
 	let base_path = normalize_path (try Extc.executable_path() with _ -> ".") in
 	let files = ref [] in
 	let time = Sys.time() in
@@ -123,7 +123,6 @@ try
 		("-v",Arg.Unit (fun () -> Typer.verbose := true; Plugin.verbose := true),": turn on verbose mode");
 		("-strict",Arg.Unit (fun () -> Typer.strict_mode := true),": turn on strict mode");
 		("-infer",Arg.Unit (fun () -> Typer.local_inference := true),": turn on local variables inference");
-		("-wimp",Arg.Unit (fun () -> Typer.warn_imports := true),": turn on warnings for unused imports");
 		("-msvc",Arg.Unit (fun () -> print_style := StyleMSVC),": use MSVC style errors");
 		("-mx",Arg.Unit (fun () ->
 			Typer.use_components := true;

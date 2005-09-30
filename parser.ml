@@ -27,7 +27,6 @@ exception Error of error_msg * pos
 
 let warning = ref (fun (msg : string) (p : pos) -> ())
 let use_components = ref false
-let last_comment = ref None
 
 let error_msg = function
 	| Unexpected t -> "Unexpected "^(s_token t)
@@ -336,13 +335,7 @@ and parse_type_option = parser
 	| [< '(DblDot,_); t = parse_class_path >] -> Some t
 	| [< >] -> None
 
-and parse_class_path s =
-	last_comment := None;
-	match s with parser
-	| [< '(Const (Ident "Array"),_); s >] ->
-		(match !last_comment with 
-		| None -> parse_class_path2 "Array" s
-		| Some s -> ["#" ^ s] , "Array")
+and parse_class_path = parser
 	| [< '(Const (Ident name),_); p = parse_class_path2 name >] -> p
 
 and parse_class_path2 name = parser
@@ -376,7 +369,6 @@ let parse code file =
 		let t, p = Lexer.token code in
 		match t with 
 		| Comment s | CommentLine s -> 
-			last_comment := Some s;
 			comments := (s,p) :: !comments;
 			next_token x
 		| _ ->
