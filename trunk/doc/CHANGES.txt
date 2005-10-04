@@ -3,6 +3,7 @@
 	no casts when compiling for flash6
 	warning imports not used off by default (added -wimp)
 	catched errors in swf parsing
+	some fixes in flash8 headers
 
 2005-09-13 : 1.10
 	fixed small problem with class case and import wildcards
