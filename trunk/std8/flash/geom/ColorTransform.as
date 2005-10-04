@@ -6,6 +6,7 @@ intrinsic class flash.geom.ColorTransform {
 	var redOffset : Number;
 	var alphaOffset : Number;
 	var blueMultiplier : Number;
+	var greenMultiplier : Number;
 	var redMultiplier : Number;
 	var alphaMultiplier : Number;
 
