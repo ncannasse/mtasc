@@ -7,6 +7,8 @@
 
 2005-09-13 : 1.10
 	fixed small problem with class case and import wildcards
+	added -infer parameter
+	fixed bug with += with properties
 	added exclude wildcards and exclude without file
 	changed TRACE in "trace"
 	added AS keywords as real keywords (including deprecated ones)
