@@ -614,7 +614,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		| _ -> error (Custom "Casting to not a class") (pos v1))
 	| EArray (v1,v2) -> 
 		let t = type_val ctx v1 in
-		let t2 = type_val ctx v2 in
+		ignore(type_val ctx v2);
 		(match t with
 		| Class { param = Some c } -> Class c
 		| _ -> Dyn)
