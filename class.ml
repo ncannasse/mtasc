@@ -105,7 +105,6 @@ let is_getset clctx v =
 let rec resolve_supervar c name =
 	match c.superclass with
 	| None -> 
-		failwith (s_type_path c.path ^ ":" ^ name);
 		assert false
 	| Some c ->
 		try

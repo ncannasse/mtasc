@@ -228,7 +228,6 @@ let func ctx args constructor arguments =
 	} in
 	write ctx (AFunction2 f);
 	let start_pos = ctx.code_pos in
-	let op_pos = DynArray.length ctx.ops - 1 in
 	(fun nregs ->
 		let delta = ctx.code_pos - start_pos in
 		f.f2_codelen <- delta;
@@ -814,7 +813,7 @@ and generate_val ?(retval=true) ctx (v,p) =
 			let k = generate_access ctx v in
 			getvar ctx k
 		end;
-		let k = generate_access ctx v in
+		ignore(generate_access ctx v);
 		let k = generate_access ctx v in
 		getvar ctx k;
 		write ctx (match op with Increment -> AIncrement | Decrement -> ADecrement | _ -> assert false);
@@ -903,7 +902,7 @@ let rec generate_expr ctx (e,p) =
 			let k = generate_access ctx x in
 			push ctx [VReg 0];
 			setvar ctx k
-		| EVars (_,_,[(x,_,None) as l]) ->
+		| EVars (_,_,[(x,_,None)]) ->
 			push ctx [VStr x];
 			Hashtbl.add ctx.locals x { reg = 0; sp = ctx.stack };
 			push ctx [VReg 0];
