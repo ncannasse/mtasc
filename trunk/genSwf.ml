@@ -1375,6 +1375,7 @@ let generate file out ~compress exprs =
 			loop (showf @ acc) l
 		end else begin
 			found := true;
+			let main = ref None in
 			let rec loop_tag cid l = 
 				if List.exists ((=) cid) !found_ids then
 					loop_tag (cid + 1) l
@@ -1383,7 +1384,7 @@ let generate file out ~compress exprs =
 			and loop_tag_rec cid = function				
 				| [] -> []
 				| ("",_,ops) :: l ->
-					tag ~ext:true (TDoAction ops) ::
+					main := Some (tag ~ext:true (TDoAction ops));
 					loop_tag (cid + 1) l
 				| (name,_,ops) :: l ->
 					tag ~ext:true (TClip { c_id = cid; c_frame_count = 1; c_tags = [] }) ::
@@ -1392,7 +1393,7 @@ let generate file out ~compress exprs =
 					loop_tag (cid + 1) l
 			in
 			let t = List.rev (loop_tag 0x5000 !tags) in
-			loop (showf @ !regs @ t @ acc) l
+			loop (showf @ (match !main with None -> [] | Some m -> [m]) @ !regs @ t @ acc) l
 		end
 	in	
 	let replace_package p cid x y z = 
