@@ -6,7 +6,10 @@
 	some fixes in flash8 headers and file format handling
 	fixed duplicate main calls when registerClass calls found
 	fixed bug when using "with"
-	added error cannot have same field in class (static + member)	
+	added error cannot have same field in class (static + member)
+	(hotfixes)
+	fixed resolve path for typed Arrays.
+	allowed new and literal Array init for typed Arrays.
 
 2005-09-13 : 1.10
 	fixed small problem with class case and import wildcards
