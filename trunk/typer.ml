@@ -223,6 +223,15 @@ let rec unify ta tb p =
 	| _ , _ ->
 		error (Cannot_unify (ta,tb)) p
 
+let unify_array t1 t2 v p =
+	match t2 with
+	| Class { path = ([t],"Array") } when t.[0] = '#' ->
+		(match fst v with
+		| ENew ((EStatic ([],"Array"),_),[]) -> ()
+		| EArrayDecl _ -> ()
+		| _ -> unify t1 t2 p);
+	| _ -> unify t1 t2 p
+
 let rec tcommon ctx ta tb p =
 	match ta , tb with
 	| Void , Void -> Void
@@ -579,7 +588,7 @@ let rec type_binop ctx op v1 v2 p =
 			unify t2 ctx.inumber p;
 			ctx.inumber
 		| OpAssign ->
-			unify t2 t1 p;
+			unify_array t2 t1 v2 p;
 			t1
 		| OpEq
 		| OpPhysEq
@@ -725,7 +734,7 @@ let rec type_expr ctx (e,p) =
 				| None -> t 
 				| Some v -> 
 					let tv = type_val ctx v in
-					unify tv t (pos v);
+					unify_array tv t v (pos v);
 					if !local_inference && tt = None then tv else t
 			) in
 			name , t
@@ -1006,7 +1015,7 @@ let rec load_class ctx path p =
 			| x :: l -> loop (x :: acc) l
 		in
 		let path2 = loop [] path2 in
-		let cl2 = load_class ctx path2 p in
+		let cl2 = resolve_path ctx path2 p in
 		let arr = { cl with
 			path = path;
 			param = Some cl2;
