@@ -345,7 +345,7 @@ let rec add_class_field ctx clctx fname stat pub get ft p =
 		) in
 		Hashtbl.replace h fname f
 	| Normal ->
-		if f <> None then error (Custom ("Field redefiniton : " ^ fname)) p;
+		if f <> None || Hashtbl.mem (match stat with IsStatic -> clctx.fields | IsMember -> clctx.statics) fname then error (Custom ("Field redefiniton : " ^ fname)) p;
 		Hashtbl.add h fname {
 			f_name = fname;
 			f_type = ft;
@@ -626,7 +626,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 		| Package pk when not in_field -> resolve_package ctx e pk p
 		| t -> t) in
 		(match e with
-		| EField ((EStatic p , pos) as v,_) , _ when f <> "prototype" -> 
+		| EField ((EStatic p , pos) as v,_) , _ when f <> "prototype" && fst p <> ["__With"] -> 
 			let rec loop cl =
 				if Hashtbl.mem cl.statics f then
 					cl.path
