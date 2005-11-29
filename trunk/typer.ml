@@ -720,7 +720,7 @@ let rec type_expr ctx (e,p) =
 	match e with
 	| EVars (_,_,vl) ->
 		let vt = List.map (fun (name,tt,v) -> 
-			let t = t_opt ctx p tt in
+			let t = (if !local_inference && v <> None && tt = None then Dyn else t_opt ctx p tt) in
 			let t = (match v with
 				| None -> t 
 				| Some v -> 
