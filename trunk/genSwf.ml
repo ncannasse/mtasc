@@ -358,6 +358,10 @@ let super_binding_ident path fname =
 	| l -> String.concat "_" l ^ "_") ^ snd path ^ "_" ^ fname
 
 let generate_package ?(fast=false) ctx l =
+	let fast = fast && (match l with
+		| [] -> true
+		| p :: _ -> not (Hashtbl.mem ctx.locals p)
+	) in
 	if fast then begin
 		match l with
 		| [] -> VarStr
