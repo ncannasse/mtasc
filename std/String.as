@@ -12,6 +12,7 @@ intrinsic class String
 	function substring(index1:Number,index2:Number):String;
 	function split(delimiter:String):Array;
 	function substr(index1:Number,index2:Number):String;
+	function valueOf():String;
 	static function fromCharCode():String;
 	var length:Number;
 }
