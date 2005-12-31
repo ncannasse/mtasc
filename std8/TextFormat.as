@@ -24,7 +24,7 @@ intrinsic class TextFormat
 
 	// Flash8
 	var kerning:Boolean;
-
+	var letterSpacing:Number;
 }
 
 
