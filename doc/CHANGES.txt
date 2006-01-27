@@ -2,6 +2,7 @@
 	prevented -keep with -header
 	allowed dynamic static classes
 	improved Flash8 shapes support
+	allowed access to private variables inside local defined functions
 	
 2005-11-29 : 1.11
 	added typed arrays

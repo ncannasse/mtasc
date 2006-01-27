@@ -77,7 +77,7 @@ type context = {
 	files : (string,signature list) Hashtbl.t;
 	classes : (type_path,class_context) Hashtbl.t;
 	in_static : bool;
-	in_lambda : bool;
+	in_lambda : class_context option;
 	in_constructor : bool;
 	locals : (string,local) Hashtbl.t;
 	mutable frame : int;
@@ -481,14 +481,14 @@ let type_constant ctx c e p =
 	| Ident "true" | Ident "false" -> ctx.ibool
 	| Ident "null" | Ident "undefined" | Ident "_global" -> Dyn
 	| Ident "this" ->
-		if ctx.in_lambda then
+		if ctx.in_lambda <> None then
 			Dyn
 		else begin
 			if ctx.in_static then error (Custom "Cannot access this in static function") p;
 			Class ctx.current
 		end
 	| Ident "super" ->
-		if ctx.in_lambda then
+		if ctx.in_lambda <> None then
 			Dyn
 		else begin
 			if ctx.in_static then error (Custom "Cannot access super in static function") p;
@@ -560,7 +560,15 @@ and type_field ctx t f p =
 		if not (is_dynamic t) then error (Custom (s_type_decl (match t with Static c -> Class c | _ -> t) ^ " have no " ^ (match t with Static _ -> "static " | _ -> "") ^ "field " ^ f)) p;
 		Dyn
 	| Some f ->
-		if f.f_public = IsPrivate then (match t with Class c | Static c when not (is_super c ctx.current) -> error (Custom ("Cannot access private field " ^ f.f_name)) p | _ -> ());
+		if f.f_public = IsPrivate then (match t with
+			| Class c | Static c ->
+				if not (is_super c ctx.current) then begin
+					if (match ctx.in_lambda with 
+						| None -> true 
+						| Some cur -> not (is_super c cur)
+					) then error (Custom ("Cannot access private field " ^ f.f_name)) p
+				end;
+			| _ -> ());
 		f.f_type
 
 let rec type_binop ctx op v1 v2 p =
@@ -835,7 +843,7 @@ let type_function ?(lambda=false) ctx clctx f p =
 				locals = if lambda then ctx.locals else Hashtbl.create 0;
 				in_static = (f.fstatic = IsStatic);
 				in_constructor = (f.fstatic = IsMember && f.fname = clctx.name);
-				in_lambda = lambda;
+				in_lambda = (if lambda then (match ctx.in_lambda with None -> Some ctx.current | Some _ -> ctx.in_lambda) else None);
 				curwith = None;
 		} in
 		let fr = new_frame ctx in
@@ -1100,7 +1108,7 @@ let create cpath =
 		files = Hashtbl.create 0;
 		classes = Hashtbl.create 0;
 		in_static = true;
-		in_lambda = false;
+		in_lambda = None;
 		in_constructor = false;
 		returns = Void;
 		curwith = None;
