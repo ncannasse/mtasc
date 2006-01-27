@@ -1539,7 +1539,8 @@ Plugin.add [
 	("-version",Arg.Int (fun n -> version := Some n),": change SWF version (6,7,8,...)");	
 	("-trace",Arg.String (fun t -> ftrace := Some t),"<function> : specify a TRACE function");
 ]
-(fun t ->	
+(fun t ->
+	if !keep && !header <> None then failwith "-keep cannot be used together with -header";
 	if !Plugin.verbose && Hashtbl.length excludes > 0 then Printf.printf "Excludes : %s\n" (String.concat ";" (List.of_enum (Hashtbl.keys excludes)));
 	match !swf with 
 	| None -> () 
