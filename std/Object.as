@@ -12,7 +12,7 @@
 	var __proto__:Object;
 	var constructor : Function;
 
-	static function registerClass(name:String, theClass:Object):Boolean;
+	static function registerClass(name:String, theClass:Function):Boolean;
 	static var prototype:Object;
 
 }
