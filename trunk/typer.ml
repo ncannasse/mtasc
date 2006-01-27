@@ -365,8 +365,8 @@ let rec add_class_field ctx clctx fname stat pub get ft p =
 
 let is_dynamic = function
 	| Dyn | Function _ | Package _ -> true
-	| Void | Static _ -> false
-	| Class c -> c.dynamic
+	| Void -> false
+	| Static c | Class c -> c.dynamic
 
 let add_finalizer ctx f =
 	ctx.finalizers := f :: !(ctx.finalizers)
