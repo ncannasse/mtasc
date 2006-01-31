@@ -85,6 +85,7 @@ let stack_delta = function
 	| ALocalVar -> -1
 	| ALocalAssign -> -2
 	| AReturn -> -1
+	| AFSCommand2 -> 0
 	| AGetURL2 _ -> -2
 	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
@@ -690,6 +691,12 @@ and generate_call ?(newcall=false) ctx v vl =
 	| EConst (Ident "targetPath") , [v] ->
 		generate_val ctx v;
 		write ctx ATargetPath
+	| EConst (Ident "FSCommand2") , l ->
+		List.iter (generate_val ctx) (List.rev l);		
+		let nargs = List.length l in
+		push ctx [VInt nargs];
+		write ctx AFSCommand2;
+		ctx.stack <- ctx.stack - nargs
 	| EConst (Ident "fscommand") , [v] ->
 		push ctx [VStr "FSCommand:"];
 		generate_val ctx v;
