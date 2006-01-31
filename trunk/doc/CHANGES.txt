@@ -1,8 +1,9 @@
-2006-??-?? : 1.12
+2006-01-31 : 1.12
 	prevented -keep with -header
 	allowed dynamic static classes
 	improved Flash8 shapes support
 	allowed access to private variables inside local defined functions
+	faster SWF parsing
 	
 2005-11-29 : 1.11
 	added typed arrays
