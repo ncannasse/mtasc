@@ -4,6 +4,8 @@
 	improved Flash8 shapes support
 	allowed access to private variables inside local defined functions
 	faster SWF parsing
+	(hotfixes)
+	added FSCommand2 support for FlashLite
 	
 2005-11-29 : 1.11
 	added typed arrays
