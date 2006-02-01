@@ -22,7 +22,7 @@
 
 (* ----- BEGIN CONFIGURATION ---- *)
 
-let zlib = "zlib.lib"
+let zlib = match Sys.os_type with "Win32" -> "zlib.lib" | _ -> "-lz"
 let bytecode = true
 let native = true
 
