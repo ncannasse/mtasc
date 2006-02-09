@@ -1,4 +1,4 @@
-﻿intrinsic class NetStream
+﻿dynamic intrinsic class NetStream
 {
 	var time:Number;
 	var currentFps:Number;
@@ -9,7 +9,7 @@
 	var bytesTotal:Number;
 
 	function NetStream(connection:NetConnection);
-  function onMetaData(info:Object):Void;
+	function onMetaData(info:Object):Void;
 	function onStatus(info:Object):Void;
 	function publish(name:Object, type:String):Void;
 	function play(name:Object, start:Number, len:Number, reset:Object);
