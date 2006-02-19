@@ -90,7 +90,8 @@ let stack_delta = function
 	| ADeleteObj | AInstanceOf | ACast -> -1
 	| AExtends | AImplements -> -2
 	| AEnum2 | ATrace | AThrow -> -1
-	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | AGetTimer | ATypeOf | ATargetPath -> 0
+	| AGetTimer -> 1
+	| AIncrement | ADecrement | AChr | AOrd | ARandom | ADelete | ATypeOf | ATargetPath -> 0
 	| AObjCall | ACall | ANewMethod -> assert false
 	| op -> failwith ("Unknown stack delta for " ^ (ActionScript.action_string (fun _ -> "") 0 op))
 
