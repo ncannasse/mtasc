@@ -557,7 +557,7 @@ let rec resolve_package ctx v (p : string list) pos =
 and type_field ctx t f p =
 	match resolve t f with
 	| None -> 
-		if not (is_dynamic t) then error (Custom (s_type_decl (match t with Static c -> Class c | _ -> t) ^ " have no " ^ (match t with Static _ -> "static " | _ -> "") ^ "field " ^ f)) p;
+		if not (is_dynamic t) then error (Custom (s_type_decl (match t with Static c -> Class c | _ -> t) ^ " has no " ^ (match t with Static _ -> "static " | _ -> "") ^ "field " ^ f)) p;
 		Dyn
 	| Some f ->
 		if f.f_public = IsPrivate then (match t with
