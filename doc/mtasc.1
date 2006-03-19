@@ -1,0 +1,77 @@
+.TH MTASC "1" "February 2006" "mtasc " "User Commands"
+.SH NAME
+mtasc \- ActionScript 2 to Flash (SWF) compiler
+.SH DESCRIPTION
+.PP
+This manual page documents briefly the \fBmtasc\fR command.
+.PP
+It was written for Debian as \fBmtasc\fR does not have a manual page.
+.PP
+\fBmtasc\fR compiles ActionScript 2 files to Flash (SWF) files.
+.PP
+.SH SYNOPSIS
+\fBmtasc\fP [options] <files...>
+.SH OPTIONS
+.PP
+The options are processed from left to right. All of the options use a single dash.
+.TP
+\fB\-pack\fR <path>
+Compile all files in target package.
+.TP
+\fB\-cp\fR <path>
+Add classpath.
+.TP
+\fB\-v\fR
+Turn on verbose mode.
+.TP
+\fB\-strict\fR
+Turn on strict mode.
+.TP
+\fB\-infer\fR
+Turn on local variables inference.
+.TP
+\fB\-wimp\fR
+Turn on warnings for unused imports.
+.TP
+\fB\-msvc\fR
+Use MSVC style errors.
+.TP
+\fB\-mx\fR
+Use precompiled mx package.
+.TP
+\fB\-swf\fR <file>
+Input SWF file to update.
+.TP
+\fB\-out\fR <file>
+SWF output file.
+.TP
+\fB\-keep\fR
+Do not remove AS2 classes from input SWF.
+.TP
+\fB\-frame\fR <frame>
+Export into target frame (it must exist in the SWF).
+.TP
+\fB\-main\fR
+Enable the main entry point.
+.TP
+\fB\-header\fR <header>
+Specify header format. The format of this option is 'width:height:fps',
+where fps means frames per second.
+.TP
+\fB\-group\fR
+Group classes into a single clip
+.TP
+\fB\-exclude\fR <file>
+Exclude classes listed in a file.
+.TP
+\fB\-version\fR
+Change SWF version (6,7,8,...)
+.TP
+\fB\-trace\fR <function>
+Specify a TRACE function.
+.TP
+\fB\-help\fR or \fB\-\-help\fR
+Display a list of options and what they do.
+.SH "SEE ALSO"
+.PP
+The mtasc website (http://www.mtasc.org) and the mtasc osflash page (http://osflash.org/mtasc).
