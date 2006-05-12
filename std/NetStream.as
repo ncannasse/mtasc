@@ -22,6 +22,8 @@
 	function attachVideo(theCamera:Camera,snapshotMilliseconds:Number):Void;
 	function send(handlerName:String):Void;
 	function setBufferTime(bufferTime:Number):Void;
+
+	function onCuePoint(info:Object):Void;
 }
 
 
