@@ -736,7 +736,7 @@ and type_val ?(in_field=false) ctx ((v,p) as e) =
 let rec type_expr ctx (e,p) =
 	match e with
 	| EVars (_,_,vl) ->
-		let vt = List.map (fun (name,tt,v) -> 
+		List.iter (fun (name,tt,v) -> 
 			let t = (if !local_inference && v <> None && tt = None then Dyn else t_opt ctx p tt) in
 			let t = (match v with
 				| None -> t 
@@ -745,9 +745,8 @@ let rec type_expr ctx (e,p) =
 					unify_array tv t v (pos v);
 					if !local_inference && tt = None then tv else t
 			) in
-			name , t
-		) vl in
-		List.iter (fun (name,t) -> define_local ctx name t p) vt
+			define_local ctx name t p			
+		) vl
 	| EFunction f ->
 		assert false
 	| EBlock el ->
