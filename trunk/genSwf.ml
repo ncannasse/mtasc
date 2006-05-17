@@ -302,8 +302,8 @@ let rec used_in_block curblock vname e =
 			List.exists vloop vl
 		| ECall (v,vl) ->
 			List.exists vloop (v :: vl)
-		| ENew (_,vl) ->
-			List.exists vloop vl
+		| ENew (v,vl) ->
+			vloop v || List.exists vloop vl
 		| EUnop (_,_,v) ->
 			vloop v
 		| EQuestion (v,v1,v2) ->
