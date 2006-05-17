@@ -1,5 +1,6 @@
 2006-??-?? : 1.13
 	updated Video and NetStream headers.
+	fixed small bug if environment variable in new E()
 	
 2006-01-31 : 1.12
 	prevented -keep with -header
