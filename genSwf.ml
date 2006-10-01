@@ -697,7 +697,7 @@ and generate_call ?(newcall=false) ctx v vl =
 		let nargs = List.length l in
 		push ctx [VInt nargs];
 		write ctx AFSCommand2;
-		ctx.stack <- ctx.stack - nargs
+		ctx.stack <- ctx.stack - (nargs - 1)
 	| EConst (Ident "fscommand") , [v] ->
 		push ctx [VStr "FSCommand:"];
 		generate_val ctx v;
