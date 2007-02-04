@@ -40,8 +40,6 @@ intrinsic class System.capabilities
 	static var hasMIDI:Boolean;
 	static var hasMMS:Boolean;
 	static var hasMouse:Boolean;
-	static var hasMP3:Boolean;
-	static var hasPrinting:Boolean;
 	static var hasQWERTYKeyboard:Boolean;
 	static var hasSharedObjects:Boolean;
 	static var hasSMAF:Boolean;
