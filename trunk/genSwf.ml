@@ -832,7 +832,7 @@ and generate_val ?(retval=true) ctx (v,p) =
 		setvar ~retval:(retval && flag = Prefix) ctx k
 
 let generate_local_var ctx (vname,_,vinit) =
-	if used_in_block false vname ctx.cur_block then begin
+	if used_in_block false vname ctx.cur_block || ctx.reg_count >= 250 then begin
 		push ctx [VStr vname];
 		Hashtbl.add ctx.locals vname { reg = 0; sp = ctx.stack };
 		match vinit with
@@ -1516,6 +1516,14 @@ let make_header s =
 	with
 		_ -> raise (Arg.Bad "Invalid header format")
 
+let rec trim f =
+	let l = String.length f in
+	if l = 0 then
+		""
+	else match f.[l - 1] with
+		| '\r' | '\n' -> trim (String.sub f 0 (l - 1))
+		| _ -> f
+
 let exclude_file f =
 	let lines = (try
 		let ch = open_in (Plugin.find_file f) in
@@ -1526,6 +1534,7 @@ let exclude_file f =
 		String.nsplit f ";"
 	) in
 	List.iter (fun f ->
+		let f = trim f in
 		if f <> "" then Hashtbl.replace excludes f ()
 	) lines
 
