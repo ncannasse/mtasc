@@ -838,7 +838,7 @@ let type_function ?(lambda=false) ctx clctx f p =
 		if not lambda then verbose_msg ("Typing " ^ s_type_path clctx.path ^ "." ^ f.fname);
 		let ctx = {
 			ctx with
-				current = if lambda then { clctx with imports = ctx.current.imports } else clctx;
+				current = if lambda then { clctx with imports = ctx.current.imports; native = false; } else clctx;
 				locals = if lambda then ctx.locals else Hashtbl.create 0;
 				in_static = (f.fstatic = IsStatic);
 				in_constructor = (f.fstatic = IsMember && f.fname = clctx.name);
@@ -877,6 +877,7 @@ let rec type_class_fields ctx clctx comp (e,p) =
 		let t = Function (List.map (fun (_,t) -> t_opt ctx p t) f.fargs , ret_opt ctx p f) in
 		if f.fname = snd clctx.path then begin
 			if f.ftype <> None then error (Custom "Constructor return type should not be specified") p;
+			if clctx.interface then error (Custom "Interface can't have a constructor") p;
 			match clctx.constructor with
 			| None -> clctx.constructor <- Some { f_name = f.fname;	f_type = t; f_static = IsMember; f_public = f.fpublic; f_pos = null_pos }
 			| Some _ -> error (Custom "Duplicate constructor") p;
