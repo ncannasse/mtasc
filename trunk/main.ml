@@ -112,7 +112,7 @@ let report ?(do_exit=true) (msg,p) etype printer =
 	if do_exit then exit 1
 ;;
 try	
-	let usage = "Motion-Twin ActionScript2 Compiler 1.12 - (c)2004-2005 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
+	let usage = "Motion-Twin ActionScript2 Compiler 1.13 - (c)2004-2007 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
 	let base_path = normalize_path (try Extc.executable_path() with _ -> ".") in
 	let files = ref [] in
 	let time = Sys.time() in
@@ -133,10 +133,8 @@ try
 	] @ !Plugin.options in
 	Arg.parse args_spec (fun file -> files := file :: !files) usage;
 	Plugin.class_path := (base_path ^ "std/") :: !Plugin.class_path;
-	if !GenSwf.version = Some 8 then begin
-		Plugin.class_path := (base_path ^ "std8/") :: !Plugin.class_path;
-		Hashtbl.remove Lexer.keywords "add";
-	end;
+	if !GenSwf.version = Some 8 then Plugin.class_path := (base_path ^ "std8/") :: !Plugin.class_path;
+	Hashtbl.remove Lexer.keywords "add";
 	Parser.warning := (fun msg pos -> report ~do_exit:false (msg,pos) "Warning" (fun msg -> msg));
 	if !files = [] then begin
 		Arg.usage args_spec usage
