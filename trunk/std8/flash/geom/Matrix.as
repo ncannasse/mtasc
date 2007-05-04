@@ -13,7 +13,7 @@ intrinsic class flash.geom.Matrix {
 	function Matrix(a : Number, b : Number, c : Number, d : Number, tx : Number, ty : Number);
 
 	function transformPoint( p : Point ) : Point;
-	function deltaTransformPoint( p : Point ) : Void; // does not apply translation
+	function deltaTransformPoint( p : Point ) : Point;
 	function toString() : String;
 	function scale( sx : Number, sy : Number ) : Void;
 	function translate( tx : Number, ty : Number ) : Void;
