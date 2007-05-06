@@ -732,6 +732,8 @@ and generate_call ?(newcall=false) ctx v vl =
 	| EConst (Ident "getVersion") , _ ->
 		push ctx [VStr "/:$version"];
 		write ctx AEval;
+	| EConst (Ident "stopAllSounds"), [] ->
+		write ctx AStopSounds
 	| _ , _ ->
 		let nargs = List.length vl in
 		List.iter (generate_val ctx) (List.rev vl);
