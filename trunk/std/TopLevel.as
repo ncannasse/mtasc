@@ -45,5 +45,6 @@ intrinsic class TopLevel {
 	private static function throw(x) : Void;
 	private static function fscommand(x,y) : Void;
 	private static function print(x,y : String) : Void;
+	private static function stopAllSounds() : Void;
 
 }
