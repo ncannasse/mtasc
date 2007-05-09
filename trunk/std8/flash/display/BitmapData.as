@@ -1,4 +1,4 @@
-import flash.geom.Rectangle;
+﻿import flash.geom.Rectangle;
 import flash.geom.Point;
 
 intrinsic class flash.display.BitmapData {
@@ -37,4 +37,5 @@ intrinsic class flash.display.BitmapData {
 	function dispose() : Void;
 	function generateFilterRect(sourceRect : Rectangle, filter : flash.filters.BitmapFilter ) : Rectangle;
 
+	function compare( b : BitmapData ) : Object;
 }
