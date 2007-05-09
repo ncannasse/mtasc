@@ -1,4 +1,4 @@
-dynamic intrinsic class MovieClip
+﻿dynamic intrinsic class MovieClip
 {
 	var useHandCursor:Boolean;
 	var enabled:Boolean;
@@ -106,6 +106,9 @@ dynamic intrinsic class MovieClip
 	function getRect( bounds : Object ) : Object;
 	function attachBitmap( bmp : flash.display.BitmapData, depth : Number, pixelSnapping : String, smoothing : Boolean ) : Void;
 
+	// FLASH 9
+	var forceSmoothing : Boolean;
+	
 }
 
 
