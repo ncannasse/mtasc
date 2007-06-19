@@ -68,7 +68,7 @@
 	function moveTo(x:Number,y:Number):Void;
 	function lineTo(x:Number,y:Number):Void;
 	function curveTo(controlX:Number,controlY:Number,anchorX:Number,anchorY:Number):Void;
-	function lineStyle(thickness:Number,rgb:Number,alpha:Number):Void;
+	function lineStyle(thickness:Number,rgb:Number,alpha:Number,pixelHinting:Boolean,noScale:String,capsStyle:String,jointStyle:String,miterLimit:Number):Void;
 	function endFill():Void;
 	function clear():Void;
 	function createTextField(instanceName:String,depth:Number,x:Number,y:Number,width:Number,height:Number):TextField; /* Void before Flash 8 */
