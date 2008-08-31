@@ -1,4 +1,4 @@
-﻿intrinsic class Stage
+intrinsic class Stage
 {
 	static var width:Number;
 	static var height:Number;
@@ -9,6 +9,7 @@
 	static function removeListener(listener:Object):Void;
 	
 	static var displayState : String;
+	static var fullScreenSourceRect : flash.geom.Rectangle;	
 	static function onFullScreen( full : Boolean ) : Void;	
 }
 
