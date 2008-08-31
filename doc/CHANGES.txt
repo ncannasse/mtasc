@@ -1,6 +1,9 @@
 2007-??-?? : 1.14
 	added stopAllSounds() support
 	added lineStyle F8 additional parameters
+	fixed FSCommand2 stack
+	added Stage.fullScreenSourceRect
+	compiling with version 9+ now uses std8 folder
 
 2007-02-04 : 1.13
 	updated Video and NetStream headers.
