@@ -1,4 +1,4 @@
-2007-??-?? : 1.14
+2008-08-31 : 1.14
 	added stopAllSounds() support
 	added lineStyle F8 additional parameters
 	fixed FSCommand2 stack
