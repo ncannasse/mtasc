@@ -43,7 +43,7 @@ intrinsic class TopLevel {
 	private static function loadVariables( url : String, target : MovieClip, method : String ) : Void;
 	private static function typeof( o ) : String;
 	private static function instanceof( o : Object, cl : Object ) : Boolean;
-	private static function targetPath( o : MovieClip ) : String;
+	private static function targetPath( o : Object ) : String;
 	private static var arguments : FunctionArguments;
 	private static function throw(x) : Void;
 	private static function fscommand(x,y) : Void;
