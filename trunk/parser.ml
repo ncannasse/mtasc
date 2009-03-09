@@ -72,7 +72,7 @@ let rec make_binop op e ((v,p2) as e2) =
 	| _ ->
 		EBinop (op,e,e2) , punion (pos e) (pos e2)
 
-let rec make_unop op ((v,p2) as e) p1 = 
+let rec make_unop op ((v,p2) as e) p1 =
 	match v with
 	| EBinop (bop,e,e2) -> EBinop (bop, make_unop op e p1 , e2) , (punion p1 p2)
 	| EQuestion (_e,_e1,_e2) ->
@@ -81,7 +81,7 @@ let rec make_unop op ((v,p2) as e) p1 =
 	| _ ->
 		EUnop (op,Prefix,e), punion p1 p2
 
-let rec make_path e = 
+let rec make_path e =
 	let rec loop acc (e,_) =
 		match e with
 		| EConst (Ident s) -> s :: acc
@@ -103,9 +103,9 @@ let rec	parse_code = parser
 and parse_signature = parser
 	| [< '(BkOpen,_); _ = parse_metadata; s = parse_signature >] -> s
 	| [< '(Kwd Import,p1); p , w = parse_import >] -> EImport (p,w) , p1
-	| [< '(Kwd Interface,p1); path = parse_class_path; herits = parse_herits; '(BrOpen,p); el , p2 = parse_class true >] -> 
+	| [< '(Kwd Interface,p1); path = parse_class_path; herits = parse_herits; '(BrOpen,p); el , p2 = parse_class true >] ->
 		EInterface (path,herits,(EBlock el,punion p p2)) , punion p1 p2
-	| [< flags = parse_class_flags; '(Kwd Class,p); path = parse_class_path; herits = parse_herits; '(BrOpen,op); s >] -> 
+	| [< flags = parse_class_flags; '(Kwd Class,p); path = parse_class_path; herits = parse_herits; '(BrOpen,op); s >] ->
 		let el, p2 = parse_class (List.exists ((=) HIntrinsic) flags) s in
 		EClass (path, flags @ herits, (EBlock el, punion op p2)) , punion p p2
 	| [< _ = parse_include; s = parse_signature >] -> s
@@ -139,7 +139,7 @@ and parse_field_flags stat pub = parser
 
 and parse_class_field (stat,pub) interf = parser
 	| [< '(Kwd Var,p1); vl, p2 = parse_vars p1 >] -> EVars (stat,pub,vl) , punion p1 p2
-	| [< '(Kwd Function,p1); name, g = parse_fun_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] -> 
+	| [< '(Kwd Function,p1); name, g = parse_fun_name; '(POpen,_); args , p2 = parse_args; t = parse_type_option; s >] ->
 		EFunction {
 			fname = name;
 			fargs = args;
@@ -166,8 +166,8 @@ and parse_expr = parser
 	| [< '(Kwd For,p); '(POpen,_); c = parse_expr_opt; e = parse_for p c >] -> e
 	| [< '(Kwd If,p); cond = parse_eval; e = parse_expr_opt; e2 , p2 = parse_else (pos e) >] -> EIf (cond,wrap_var e,e2), punion p p2
 	| [< '(Kwd Return,p); v , p2 = parse_eval_option p; >] -> EReturn v , punion p p2
-	| [< '(Kwd Break,p); >] -> EBreak , p
-	| [< '(Kwd Continue,p); >] -> EContinue , p
+	| [< '(Kwd Break,p) >] -> EBreak , p
+	| [< '(Kwd Continue,p) >] -> EContinue , p
 	| [< '(Kwd While,p1); v = parse_eval; e = parse_expr_opt >] -> EWhile (v,wrap_var e,NormalWhile) , punion p1 (pos e)
 	| [< '(Kwd Do,p1); e = parse_expr; '(Kwd While,_); v = parse_eval; >] -> EWhile (v,wrap_var e,DoWhile) , punion p1 (pos v)
 	| [< '(Kwd Switch,p1); v = parse_eval; '(BrOpen,_); el, p2 = parse_switch false >] -> ESwitch (v,el) , punion p1 p2
@@ -214,7 +214,7 @@ and parse_eval_next e = parser
 	| [< '(Question,_); v1 = parse_eval; '(DblDot,_); v2 = parse_eval; e = parse_eval_next (EQuestion (e,v1,v2), punion (pos e) (pos v2)) >] -> e
 	| [< '(Kwd InstanceOf,p); v = parse_eval; s >] ->
 		let iof v = ECall ((EConst (Ident "instanceof"), p),[e;v]) , punion (pos e) (pos v) in
-		let rec loop = function			
+		let rec loop = function
 			| EBinop (op,e1,e2) , pv -> EBinop (op,loop e1,e2) , punion p pv
 			| EQuestion (e,e1,e2) , pv -> EQuestion(loop e,e1,e2) , punion p pv
 			| v -> iof v
@@ -231,7 +231,7 @@ and parse_delete v = parser
 				ECall (v , [e]) , punion (pos e) (pos v)
 		in
 		parse_eval_next (loop e) s
-	| [< e = parse_eval_next v >] -> e 
+	| [< e = parse_eval_next v >] -> e
 
 and parse_catches = parser
 	| [< '(Kwd Catch,_); '(POpen,_); '(Const (Ident name),_); t = parse_type_option; '(PClose,_); e = parse_expr; l = parse_catches >] -> (name, t, e) :: l
@@ -278,7 +278,7 @@ and parse_else p = parser
 
 and parse_expr_opt = parser
 	| [< e = parse_expr >] -> e
-	| [< '(Next,p); >] -> EBlock [] , p
+	| [< '(Next,p) >] -> EBlock [] , p
 
 and parse_for p c = parser
 	| [< '(Kwd In,_); v = parse_eval; '(PClose,p2); e = parse_expr_opt >] -> EForIn(c,v,wrap_var e) , punion p p2
@@ -312,7 +312,7 @@ and parse_var_init = parser
 and parse_switch def = parser
 	| [< '(BrClose,p) >] -> [] , p
 	| [< '(Kwd Case,p); v = parse_eval; '(DblDot,_); c = parse_switch_clause; el, p2 = parse_switch def >] -> (Some v,(EBlock c,p)) :: el , p2
-	| [< '(Kwd Default,p); '(DblDot,_); c = parse_switch_clause; el, p2 = parse_switch true >] -> 		
+	| [< '(Kwd Default,p); '(DblDot,_); c = parse_switch_clause; el, p2 = parse_switch true >] ->
 		if def then error Duplicate_default p;
 		(None, (EBlock c,p)) :: el , p2
 
@@ -324,7 +324,7 @@ and parse_switch_clause = parser
 and parse_block callb sp = parser
 	| [< e = callb; el,p = parse_block callb sp >] -> e :: el , p
 	| [< '(Next,_); el = parse_block callb sp >] -> el
-	| [< '(BrClose,p); >] -> [] , p
+	| [< '(BrClose,p) >] -> [] , p
 	| [< '(Eof,_) >] -> error Unclosed_parenthesis sp
 
 and parse_expr_list p = parser
@@ -340,7 +340,7 @@ and parse_class_path s =
 	last_comment := None;
 	match s with parser
 	| [< '(Const (Ident "Array"),_); s >] ->
-		(match !last_comment with 
+		(match !last_comment with
 		| None -> parse_class_path2 "Array" s
 		| Some s -> ["#" ^ s] , "Array")
 	| [< '(Const (Ident name),_); p = parse_class_path2 name >] -> p
@@ -351,7 +351,7 @@ and parse_class_path2 name = parser
 
 and parse_import = parser
 	| [< '(Const (Ident name),_); p = parse_import2 name >] -> p
-	| [< '(Binop OpMult,_); >] -> [] , None
+	| [< '(Binop OpMult,_) >] -> [] , None
 
 and parse_import2 name = parser
 	| [< '(Dot,_); p , n = parse_import >] -> name :: p , n
@@ -361,7 +361,7 @@ and parse_metadata = parser
 	| [< '(BkClose,_) >] -> ()
 	| [< '(_) ; () = parse_metadata >] -> ()
 
-and parse_include = parser 
+and parse_include = parser
 	| [< '(Sharp,p1); '(Const (Ident "include"),_); '(Const (String inc),p2) >] ->
 		let t = "ComponentVersion.as" in
 		let tl = String.length t in
@@ -374,8 +374,8 @@ let parse code file =
 	let comments = ref [] in
 	let rec next_token x =
 		let t, p = Lexer.token code in
-		match t with 
-		| Comment s | CommentLine s -> 
+		match t with
+		| Comment s | CommentLine s ->
 			last_comment := Some s;
 			comments := (s,p) :: !comments;
 			next_token x
@@ -389,7 +389,7 @@ let parse code file =
 		l , List.rev !comments
 	with
 		| Stream.Error _
-		| Stream.Failure -> 
+		| Stream.Failure ->
 			Lexer.restore old;
 			error (Unexpected (fst !last)) (pos !last)
 		| e ->
