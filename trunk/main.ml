@@ -49,7 +49,7 @@ let rec split l str =
 		sub :: (split l (String.sub str (p+1) (String.length str - (p+1))))
 
 let class_name file =
-	let path = Filename.dirname file in	
+	let path = Filename.dirname file in
 	let path = (match split ['/';'\\'] path with "." :: l -> l | l -> l) in
 	let file = Filename.basename file in
 	path , try
@@ -61,7 +61,7 @@ let normalize_path p =
 	let l = String.length p in
 	if l = 0 then
 		"./"
-	else match p.[l-1] with 
+	else match p.[l-1] with
 		| '\\' | '/' -> p
 		| _ -> p ^ "/"
 
@@ -111,8 +111,9 @@ let report ?(do_exit=true) (msg,p) etype printer =
 	prerr_endline (sprintf "%s : %s %s" epos etype (printer msg));
 	if do_exit then exit 1
 ;;
-try	
-	let usage = "Motion-Twin ActionScript2 Compiler 1.14 - (c)2004-2008 Motion-Twin\n Usage : mtasc.exe [options] <files...>\n Options :" in
+try
+	let exe_ext = match Sys.os_type with "Win32" | "Cygwin" -> ".exe" | _ -> "" in
+	let usage = "Motion-Twin ActionScript2 Compiler 1.14 - (c)2004-2008 Motion-Twin\n Usage : mtasc" ^ exe_ext ^ " [options] <files...>\n Options :" in
 	let base_path = normalize_path (try Extc.executable_path() with _ -> ".") in
 	let files = ref [] in
 	let time = Sys.time() in
@@ -145,7 +146,7 @@ try
 			with
 				Typer.Error (Typer.Class_not_found ([],"StdPresent"),_) -> failwith "Directory 'std' containing MTASC class headers cannot be found :\nPlease install it or set classpath using '-cp' so it can be found.")
 		in
-		List.iter (fun file ->			
+		List.iter (fun file ->
 			let path = class_name file in
 			ignore(Typer.load_class typer path Typer.argv_pos);
 		) (List.rev !files);
@@ -160,7 +161,7 @@ with
 	| Typer.Error (m,p) -> report (m,p) "type error" Typer.error_msg
 	| Typer.File_not_found file ->
 		prerr_endline (sprintf "File not found %s" file);
-		exit 1	
+		exit 1
 	| Failure msg ->
 		prerr_endline msg;
 		exit 1;
